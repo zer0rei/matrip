@@ -1,17 +1,22 @@
 import { createMuiTheme } from '@material-ui/core/styles';
 import blueGrey from '@material-ui/core/colors/blueGrey';
-import pink from '@material-ui/core/colors/pink';
+import red from '@material-ui/core/colors/red';
+import deepOrange from '@material-ui/core/colors/deepOrange';
 
 const primary = blueGrey;
-const secondary = pink;
+const secondary = red;
+const error = deepOrange;
 const theme = createMuiTheme({
   palette: {
     primary: {
       main: primary[600],
     },
     secondary: {
-      main: secondary[300],
+      main: secondary[400],
     },
+    error: {
+      main: error[500],
+    }
   }
 });
 

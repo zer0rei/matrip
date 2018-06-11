@@ -60,9 +60,11 @@ class App extends Component {
                 <Typography variant="title" color="inherit"
                   className={[classes.flex, classes.title].join(' ')}
                 >
-                  matrip
+                  <Link to="/" style={{textDecoration: "none", color: "inherit"}}>matrip</Link>
                 </Typography>
-                <Button color="inherit">Login</Button>
+                <Link to="/login" style={{textDecoration: "none", color: "inherit"}}>
+                  <Button color="inherit">Login</Button>
+                </Link>
               </Toolbar>
             </AppBar>
             <Route exact path="/" 
