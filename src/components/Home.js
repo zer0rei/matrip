@@ -55,7 +55,7 @@ class Home extends Component {
           direction='row'
           justify='center'
         >
-          <Grid item xs={10} md={4}>
+          <Grid item xs={11} md={5}>
             <Paper className={classes.container}>
               <SearchForm/>
             </Paper>

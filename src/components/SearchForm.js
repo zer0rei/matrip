@@ -71,7 +71,7 @@ class SearchForm extends Component {
 
   handleNumTravellersChange = event => {
     let num = event.target.value;
-    if (num >= 0 && num <= 10)
+    if (num >= 0 && num <= 6)
       this.setState({ numTravellers: Math.floor(num) });
   }
 
@@ -163,7 +163,7 @@ class SearchForm extends Component {
               label='One way'
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={6}>
             <DateTimePicker
               id='depart'
               label='Depart'
@@ -175,7 +175,7 @@ class SearchForm extends Component {
               onChange={this.handleDepartDateChange}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={6}>
             <DateTimePicker
               id='return'
               label='Return'
