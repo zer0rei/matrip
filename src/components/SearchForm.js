@@ -16,6 +16,7 @@ import DateFnsUtils from 'material-ui-pickers/utils/date-fns-utils';
 import addDays from 'date-fns/addDays'
 import MuiPickersUtilsProvider from 'material-ui-pickers/utils/MuiPickersUtilsProvider';
 import DateTimePicker from 'material-ui-pickers/DateTimePicker';
+import PlaceInput from './PlaceInput';
 
 const styles = theme => ({
   nav: {
@@ -47,13 +48,24 @@ class SearchForm extends Component {
     super(props);
     this.state = {
       navValue: 'flights',
+      source: '',
+      destination: '',
+      suggestions: [],
       isOneWay: true,
       cabinClass: 0,
       cabinClassList: ['Economy', 'Business', 'First Class'],
-      numTravellers: 0,
+      numTravellers: 1,
       departDate: new Date(),
       returnDate: addDays(new Date(), 1)
     };
+  }
+
+  handlePlaceChange = type => value => {
+    const suggestions = [];
+    this.setState({
+      [type]: value,
+      suggestions: suggestions || []
+    });
   }
 
   handleNavChange = (event, navValue) => {
@@ -71,7 +83,7 @@ class SearchForm extends Component {
 
   handleNumTravellersChange = event => {
     let num = event.target.value;
-    if (num >= 0 && num <= 6)
+    if (num >= 1 && num <= 6)
       this.setState({ numTravellers: Math.floor(num) });
   }
 
@@ -89,7 +101,7 @@ class SearchForm extends Component {
 
   render() {
     const { classes } = this.props;
-    const { navValue, numTravellers, cabinClass, cabinClassList, isOneWay, departDate, returnDate } = this.state;
+    const { navValue, source, destination, suggestions, numTravellers, cabinClass, cabinClassList, isOneWay, departDate, returnDate } = this.state;
     return (
       <MuiPickersUtilsProvider utils={DateFnsUtils}>
         <Grid
@@ -118,9 +130,12 @@ class SearchForm extends Component {
             </BottomNavigation>
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField
+            <PlaceInput
               id='source'
               label='From'
+              suggestions={suggestions}
+              onChange={this.handlePlaceChange('source')}
+              value={source}
               fullWidth
               InputLabelProps={{
                 shrink: true
@@ -128,13 +143,15 @@ class SearchForm extends Component {
             />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField
+            <PlaceInput
               id='destination'
               label='To'
+              suggestions={suggestions}
+              onChange={this.handlePlaceChange('destination')}
+              value={destination}
               fullWidth
               InputLabelProps={{
                 shrink: true,
-                color: 'secondary'
               }}
             />
           </Grid>
