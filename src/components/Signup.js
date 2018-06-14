@@ -10,16 +10,43 @@ import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
 import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
+import Tooltip from '@material-ui/core/Tooltip';
 import DateFnsUtils from 'material-ui-pickers/utils/date-fns-utils';
 import { subYears, isBefore } from 'date-fns'
 import MuiPickersUtilsProvider from 'material-ui-pickers/utils/MuiPickersUtilsProvider';
 import DatePicker from 'material-ui-pickers/DatePicker';
+import {
+  validateName,
+  validatePhoneNumber,
+  validateEmail,
+  validatePassword
+} from '../helpers';
 
 const styles = {
   signupButton: {
     marginTop: 16
   }
 };
+
+function validate(value, type) {
+  switch(type) {
+    case 'firstName':
+      return validateName(value);
+    case 'lastName':
+      return validateName(value);
+    case 'phoneNumber':
+      if (value)
+        return validatePhoneNumber(value);
+      else
+        return true;
+    case 'email':
+      return validateEmail(value);
+    case 'password':
+      return validatePassword(value);
+    default:
+      return -1;
+  }
+}
 
 class Login extends Component {
   constructor(props) {
@@ -33,15 +60,26 @@ class Login extends Component {
       confirmPassword: '',
       birthdate: null,
       sex: '',
+      errors: {}
     };
   }
 
-  handleEmailChange = event => {
-    this.setState({ email: event.target.value });
-  }
+  handleChange = type => event => {
+    let newState = Object.assign({}, this.state);
 
-  handlePasswordChange = event => {
-    this.setState({ password: event.target.value });
+    const value = event.target.value;
+    let isValid = false;
+
+    if (type === 'confirmPassword')
+      isValid = (value === this.state.password);
+    else
+      isValid = validate(value, type);
+
+    if (isValid)
+      newState.errors[type] = false;
+
+    newState[type] = value;
+    this.setState(newState);
   }
 
   handleBirthdateChange = date => {
@@ -49,8 +87,48 @@ class Login extends Component {
       this.setState({ birthdate: date });
   }
 
+  handleSexChange = event => {
+    this.setState({ sex: event.target.value });
+  }
+
+  validateSignup = () => {
+    let newState = Object.assign({}, this.state);
+    let isValid = true;
+
+    ['firstName', 'lastName', 'email', 'phoneNumber', 'password'].forEach(type => {
+      if (!validate(this.state[type], type)) {
+        newState.errors[type] = true;
+        isValid = false;
+      } else
+        newState.errors[type] = false;
+    });
+
+    if (this.state.password !== this.state.confirmPassword) {
+      newState.errors['confirmPassword'] = true;
+      isValid = false;
+    } else
+      newState.errors['confirmPassword'] = false;
+
+    this.setState(newState);
+
+    if (isValid) {
+      // TODO: request + redirect
+    }
+
+  }
+
   render() {
-    const { firstName, lastName, email, phoneNumber, password, confirmPassword, birthdate, sex } = this.state;
+    const {
+      firstName,
+      lastName,
+      email,
+      phoneNumber,
+      password,
+      confirmPassword,
+      birthdate,
+      sex,
+      errors
+    } = this.state;
     const { classes } = this.props;
     return (
       <MuiPickersUtilsProvider utils={DateFnsUtils}>
@@ -71,19 +149,21 @@ class Login extends Component {
           </Grid>
           <Grid item xs={6}>
             <TextField
-              id='firstName'
+              id='first-name'
               label='First Name'
               value={firstName}
-              onChange={this.handleChange}
+              onChange={this.handleChange('firstName')}
+              error={errors['firstName']}
               fullWidth
             />
           </Grid>
           <Grid item xs={6}>
             <TextField
-              id='lastName'
+              id='last-name'
               label='Last Name'
               value={lastName}
-              onChange={this.handleChange}
+              onChange={this.handleChange('lastName')}
+              error={errors['lastName']}
               fullWidth
             />
           </Grid>
@@ -91,51 +171,60 @@ class Login extends Component {
             <TextField
               id='email'
               label='Email'
+              type='email'
               value={email}
-              onChange={this.handleEmailChange}
+              onChange={this.handleChange('email')}
+              error={errors['email']}
               fullWidth
               required
             />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
-              id='phoneNumber'
+              id='phone-number'
               label='Phone Number'
               value={phoneNumber}
-              onChange={this.handlePhoneNumberChange}
+              onChange={this.handleChange('phoneNumber')}
+              error={errors['phoneNumber']}
               fullWidth
             />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField
-              id='Password'
-              label='Password'
-              type='password'
-              value={password}
-              onChange={this.handlePasswordChange}
-              fullWidth
-              required
-            />
+            <Tooltip id='password-tooltip' title="Minimum eight characters, at least one letter and one number">
+              <TextField
+                id='password'
+                label='Password'
+                type='password'
+                value={password}
+                onChange={this.handleChange('password')}
+                error={errors['password']}
+                fullWidth
+                required
+              />
+            </Tooltip>
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
-              id='ConfirmPassword'
+              id='confirm-password'
               label='Confirm Password'
               type='password'
               value={confirmPassword}
-              onChange={this.handleConfirmPasswordChange}
+              onChange={this.handleChange('confirmPassword')}
+              error={errors['confirmPassword']}
               fullWidth
               required
             />
           </Grid>
           <Grid item xs={6}>
-            <DatePicker
-              id='birthdate'
-              label='Birthdate'
-              fullWidth
-              value={birthdate}
-              onChange={this.handleBirthdateChange}
-            />
+            <Tooltip id='birthdate-tooltip' title="Minimum 16 years old">
+              <DatePicker
+                id='birthdate'
+                label='Birthdate'
+                fullWidth
+                value={birthdate}
+                onChange={this.handleBirthdateChange}
+              />
+            </Tooltip>
           </Grid>
           <Grid item xs={6}>
             <FormControl fullWidth >

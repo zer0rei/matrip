@@ -6,6 +6,7 @@ import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
+import {validateEmail, validatePassword} from '../helpers'
 
 const styles = {
   loginButton: {
@@ -18,20 +19,56 @@ class Login extends Component {
     super(props);
     this.state = {
       email: '',
-      password: ''
+      password: '',
+      errors: {}
     };
   }
 
   handleEmailChange = event => {
-    this.setState({ email: event.target.value });
+    let newState = Object.assign({}, this.state);
+
+    if (validateEmail(this.target.value)) 
+      newState.errors['email'] = false;
+
+    newState.email = event.target.value;
+    this.setState(newState);
   }
 
   handlePasswordChange = event => {
-    this.setState({ password: event.target.value });
+    let newState = Object.assign({}, this.state);
+
+    if (validatePassword(this.target.value)) 
+      newState.errors['password'] = false;
+
+    newState.password = event.target.value;
+    this.setState(newState);
+  }
+
+  handleLogin = () => {
+    let newState = Object.assign({}, this.state);
+    let isValid = true;
+
+    if (!validateEmail(this.state.email)) {
+      newState.errors['email'] = true;
+      isValid = false;
+    } else
+      newState.errors['email'] = false;
+
+    if (!validatePassword(this.state.password)) {
+      newState.errors['password'] = true;
+      isValid = false;
+    } else
+      newState.errors['password'] = false;
+
+    this.setState(newState);
+
+    if (isValid) {
+      // TODO: request + redirect
+    }
   }
 
   render() {
-    const { email, password } = this.state;
+    const { email, password, errors } = this.state;
     const { classes } = this.props;
     return (
       <Grid
@@ -53,8 +90,10 @@ class Login extends Component {
           <TextField
             id='email'
             label='Email'
+            type='email'
             value={email}
             onChange={this.handleEmailChange}
+            error={errors['email']}
             fullWidth
           />
         </Grid>
@@ -65,6 +104,7 @@ class Login extends Component {
             type='password'
             value={password}
             onChange={this.handlePasswordChange}
+            error={errors['password']}
             fullWidth
           />
         </Grid>

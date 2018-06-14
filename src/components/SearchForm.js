@@ -19,12 +19,13 @@ import DateTimePicker from 'material-ui-pickers/DateTimePicker';
 import PlaceInput from './PlaceInput';
 
 function getSuggestions(query, type) {
+  // TODO: add suggestions
   if (type === 'flights') {
-    return [{label: 'flight1'}, {label: 'flight2'}];
+    return [];
   } else if (type === 'trains') {
-    return [{label: 'train1'}, {label: 'train2'}];
+    return [];
   } else if (type === 'buses') {
-    return [{label: 'bus1'}, {label: 'bus2'}];
+    return [];
   }
 }
 
@@ -112,6 +113,7 @@ class SearchForm extends Component {
   }
 
   validateSearch = () => {
+    // TODO: request + redirect
   }
 
   render() {
