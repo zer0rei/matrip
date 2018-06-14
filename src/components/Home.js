@@ -4,6 +4,9 @@ import { withStyles, MuiThemeProvider, createMuiTheme } from '@material-ui/core/
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import SearchForm from './SearchForm'
+import Login from './Login'
+import Signup from './Signup'
+import Page404 from './Page404'
 import BgImage from '../images/background.png';
 import theme from '../themes/default'
 
@@ -42,8 +45,21 @@ const styles = theme => ({
 });
 
 class Home extends Component {
+  renderSwitch(param) {
+    switch(param) {
+      case 'login':
+        return <Login/>;
+      case 'signup':
+        return <Signup/>;
+      case '404':
+        return <Page404/>;
+      default:
+        return <SearchForm/>;
+    }
+  }
+
   render() {
-    const { classes, height, width } = this.props;
+    const { classes, height, width, show } = this.props;
     return (
       <MuiThemeProvider theme={darkTheme}>
         <Grid
@@ -57,7 +73,7 @@ class Home extends Component {
         >
           <Grid item xs={11} md={5}>
             <Paper className={classes.container}>
-              <SearchForm/>
+              {this.renderSwitch(show)}
             </Paper>
           </Grid>
         </Grid>
@@ -69,7 +85,8 @@ class Home extends Component {
 Home.propTypes = {
   classes: PropTypes.object.isRequired,
   height: PropTypes.number,
-  width: PropTypes.number
+  width: PropTypes.number,
+  show: PropTypes.string
 };
 
 export default withStyles(styles)(Home);

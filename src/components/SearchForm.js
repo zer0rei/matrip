@@ -13,10 +13,20 @@ import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
 import Button from '@material-ui/core/Button';
 import DateFnsUtils from 'material-ui-pickers/utils/date-fns-utils';
-import addDays from 'date-fns/addDays'
+import { addDays, isAfter } from 'date-fns'
 import MuiPickersUtilsProvider from 'material-ui-pickers/utils/MuiPickersUtilsProvider';
 import DateTimePicker from 'material-ui-pickers/DateTimePicker';
 import PlaceInput from './PlaceInput';
+
+function getSuggestions(query, type) {
+  if (type === 'flights') {
+    return [{label: 'flight1'}, {label: 'flight2'}];
+  } else if (type === 'trains') {
+    return [{label: 'train1'}, {label: 'train2'}];
+  } else if (type === 'buses') {
+    return [{label: 'bus1'}, {label: 'bus2'}];
+  }
+}
 
 const styles = theme => ({
   nav: {
@@ -60,14 +70,6 @@ class SearchForm extends Component {
     };
   }
 
-  handlePlaceChange = type => value => {
-    const suggestions = [];
-    this.setState({
-      [type]: value,
-      suggestions: suggestions || []
-    });
-  }
-
   handleNavChange = (event, navValue) => {
     this.setState({ navValue });
     if (navValue === 'flights') {
@@ -77,6 +79,14 @@ class SearchForm extends Component {
     }
   }
   
+  handlePlaceChange = type => value => {
+    const suggestions = getSuggestions(value, this.state.navValue);
+    this.setState({
+      [type]: value,
+      suggestions: suggestions || []
+    });
+  }
+
   handleCabinClassChange = event => {
     this.setState({ cabinClass: event.target.value });
   }
@@ -92,16 +102,32 @@ class SearchForm extends Component {
   }
 
   handleDepartDateChange = (date) => {
-    this.setState({ departDate: date });
+    if (isAfter(date, new Date()))
+      this.setState({ departDate: date });
   }
 
   handleReturnDateChange = (date) => {
-    this.setState({ returnDate: date });
+    if (isAfter(date, new Date()))
+      this.setState({ returnDate: date });
+  }
+
+  validateSearch = () => {
   }
 
   render() {
     const { classes } = this.props;
-    const { navValue, source, destination, suggestions, numTravellers, cabinClass, cabinClassList, isOneWay, departDate, returnDate } = this.state;
+    const {
+    navValue,
+    source,
+    destination,
+    suggestions,
+    numTravellers,
+    cabinClass,
+    cabinClassList,
+    isOneWay,
+    departDate,
+    returnDate
+    } = this.state;
     return (
       <MuiPickersUtilsProvider utils={DateFnsUtils}>
         <Grid
@@ -224,8 +250,15 @@ class SearchForm extends Component {
             </FormControl>
           </Grid>
           }
-          <Grid item xs={6} className={classes.searchButton}>
-            <Button type='submit' color='secondary' variant='contained' fullWidth>
+          <Grid item xs={6}>
+            <Button
+              type='submit'
+              color='secondary'
+              variant='contained'
+              fullWidth
+              onClick={this.validateSearch}
+              className={classes.searchButton}
+            >
               Search {navValue}
             </Button>
           </Grid>
