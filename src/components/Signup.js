@@ -220,6 +220,9 @@ class Login extends Component {
               <DatePicker
                 id='birthdate'
                 label='Birthdate'
+                format="DD/MM/YYYY"
+                disableFuture
+                openToYearSelection
                 fullWidth
                 value={birthdate}
                 onChange={this.handleBirthdateChange}

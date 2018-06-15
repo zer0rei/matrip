@@ -213,6 +213,8 @@ class SearchForm extends Component {
               id='depart'
               label='Depart'
               fullWidth
+              disablePast
+              ampm={false}
               value={departDate}
               InputLabelProps={{
                 shrink: true
@@ -225,6 +227,8 @@ class SearchForm extends Component {
               id='return'
               label='Return'
               fullWidth
+              disablePast
+              ampm={false}
               disabled={isOneWay}
               value={returnDate}
               InputLabelProps={{
