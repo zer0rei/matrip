@@ -1,50 +1,51 @@
-import React, { Component } from 'react';
-import PropTypes from 'prop-types';
-import { withStyles } from '@material-ui/core/styles';
-import Grid from '@material-ui/core/Grid';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Checkbox from '@material-ui/core/Checkbox';
-import BottomNavigation from '@material-ui/core/BottomNavigation';
-import BottomNavigationAction from '@material-ui/core/BottomNavigationAction';
-import TextField from '@material-ui/core/TextField';
-import FormControl from '@material-ui/core/FormControl';
-import Select from '@material-ui/core/Select';
-import InputLabel from '@material-ui/core/InputLabel';
-import MenuItem from '@material-ui/core/MenuItem';
-import Button from '@material-ui/core/Button';
-import DateFnsUtils from 'material-ui-pickers/utils/date-fns-utils';
-import { addDays, isAfter } from 'date-fns'
-import MuiPickersUtilsProvider from 'material-ui-pickers/utils/MuiPickersUtilsProvider';
-import DateTimePicker from 'material-ui-pickers/DateTimePicker';
-import PlaceInput from './PlaceInput';
+import React, { Component } from "react";
+import PropTypes from "prop-types";
+import { Redirect } from "react-router-dom";
+import { withStyles } from "@material-ui/core/styles";
+import Grid from "@material-ui/core/Grid";
+import FormControlLabel from "@material-ui/core/FormControlLabel";
+import Checkbox from "@material-ui/core/Checkbox";
+import BottomNavigation from "@material-ui/core/BottomNavigation";
+import BottomNavigationAction from "@material-ui/core/BottomNavigationAction";
+import TextField from "@material-ui/core/TextField";
+import FormControl from "@material-ui/core/FormControl";
+import Select from "@material-ui/core/Select";
+import InputLabel from "@material-ui/core/InputLabel";
+import MenuItem from "@material-ui/core/MenuItem";
+import Button from "@material-ui/core/Button";
+import DateFnsUtils from "material-ui-pickers/utils/date-fns-utils";
+import { addDays, isAfter } from "date-fns"
+import MuiPickersUtilsProvider from "material-ui-pickers/utils/MuiPickersUtilsProvider";
+import DateTimePicker from "material-ui-pickers/DateTimePicker";
+import PlaceInput from "./PlaceInput";
 
 function getSuggestions(query, type) {
   // TODO: add suggestions
-  if (type === 'flights') {
+  if (type === "flights") {
+    return [{label: "test"}, {label: "test2"}];
+  } else if (type === "trains") {
     return [];
-  } else if (type === 'trains') {
-    return [];
-  } else if (type === 'buses') {
+  } else if (type === "buses") {
     return [];
   }
 }
 
 const styles = theme => ({
   nav: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   navElemSelected: {
-    color: 'white',
+    color: "white",
     borderRadius: 24,
     borderWidth: 1,
     padding: 8,
     paddingRight: 16,
     paddingLeft: 16,
-    borderStyle: 'solid',
-    borderColor: 'white'
+    borderStyle: "solid",
+    borderColor: "white"
   },
   navElem: {
-    border: 'none',
+    border: "none",
     padding: 8,
     paddingRight: 20,
     paddingLeft: 20
@@ -58,34 +59,46 @@ class SearchForm extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      navValue: 'flights',
-      source: '',
-      destination: '',
+      navValue: "flights",
+      source: "",
+      destination: "",
       suggestions: [],
       isOneWay: true,
       cabinClass: 0,
-      cabinClassList: ['Economy', 'Business', 'First Class'],
+      cabinClassList: ["Economy", "Business", "First Class"],
       numTravellers: 1,
       departDate: new Date(),
-      returnDate: addDays(new Date(), 1)
+      returnDate: addDays(new Date(), 1),
+      response: null,
+      errors: {}
     };
   }
 
   handleNavChange = (event, navValue) => {
     this.setState({ navValue });
-    if (navValue === 'flights') {
-      this.setState({cabinClassList: ['Economy', 'Business', '1st Class']});
-    } else if (navValue === 'trains') {
-      this.setState({cabinClassList: ['2nd Class', '1st Class', 'Single Bed']});
+    if (navValue === "flights") {
+      this.setState({cabinClassList: ["Economy", "Business", "1st Class"]});
+    } else if (navValue === "trains") {
+      this.setState({cabinClassList: ["2nd Class", "1st Class", "Single Bed"]});
     }
   }
   
   handlePlaceChange = type => value => {
+    let newState = Object.assign({}, this.state);
+    if (value !== "") {
+      if (type === "source") {
+        newState.errors[type] = false;
+      }
+      if (type === "destination" && value !== this.state.source) {
+        newState.errors[type] = false; 
+      }
+    }
+
     const suggestions = getSuggestions(value, this.state.navValue);
-    this.setState({
-      [type]: value,
-      suggestions: suggestions || []
-    });
+    newState[type] = value;
+    newState.suggestions = suggestions || [];
+
+    this.setState(newState);
   }
 
   handleCabinClassChange = event => {
@@ -113,31 +126,60 @@ class SearchForm extends Component {
   }
 
   validateSearch = () => {
-    // TODO: request + redirect
+    let newState = Object.assign({}, this.state);
+    let isValid = true;
+
+    if (this.state.source === "") {
+      newState.errors["source"] = true;
+      isValid = false;
+    }
+
+    if (this.state.destination === "") {
+      newState.errors["destination"] = true;
+      isValid = false;
+    }
+
+    if (this.state.destination === this.state.source) {
+      newState.errors["destination"] = true;
+      isValid = false;
+    }
+
+    if (isValid) {
+      // TODO: request
+      newState.response = {from: "rak", to: "ory"};
+    }
+
+    this.setState(newState);
   }
 
   render() {
     const { classes } = this.props;
     const {
-    navValue,
-    source,
-    destination,
-    suggestions,
-    numTravellers,
-    cabinClass,
-    cabinClassList,
-    isOneWay,
-    departDate,
-    returnDate
+      navValue,
+      source,
+      destination,
+      suggestions,
+      numTravellers,
+      cabinClass,
+      cabinClassList,
+      isOneWay,
+      departDate,
+      returnDate,
+      response,
+      errors
     } = this.state;
+
+    if (response !== null) {
+      return <Redirect to={`/routes/${response.from}/${response.to}`}/>; 
+    }
     return (
       <MuiPickersUtilsProvider utils={DateFnsUtils}>
         <Grid
           container
           spacing={16}
-          alignItems='center'
-          direction='row'
-          justify='center'
+          alignItems="center"
+          direction="row"
+          justify="center"
         >
           <Grid item xs={12}>
             <BottomNavigation
@@ -146,25 +188,32 @@ class SearchForm extends Component {
               onChange={this.handleNavChange}
               showLabels
             >
-              <BottomNavigationAction classes={{selected: classes.navElemSelected,
-                root: classes.navElem}}
-                value='flights' label='Flights'/>
-              <BottomNavigationAction classes={{selected: classes.navElemSelected,
-                root: classes.navElem}}
-                value='trains' label='Trains'/>
-              <BottomNavigationAction classes={{selected: classes.navElemSelected,
-                root: classes.navElem}}
-                value='buses' label='Buses'/>
+              <BottomNavigationAction classes={{
+                selected: classes.navElemSelected,
+                root: classes.navElem
+                }} value="flights" label="Flights"
+              />
+              <BottomNavigationAction classes={{
+                selected: classes.navElemSelected,
+                root: classes.navElem
+                }} value="trains" label="Trains"
+              />
+              <BottomNavigationAction classes={{
+                selected: classes.navElemSelected,
+                root: classes.navElem
+                }} value="buses" label="Buses"
+              />
             </BottomNavigation>
           </Grid>
           <Grid item xs={12} sm={6}>
             <PlaceInput
-              id='source'
-              label='From'
+              id="source"
+              label="From"
               suggestions={suggestions}
-              onChange={this.handlePlaceChange('source')}
+              onChange={this.handlePlaceChange("source")}
               value={source}
               fullWidth
+              error={errors["source"]}
               InputLabelProps={{
                 shrink: true
               }}
@@ -172,12 +221,13 @@ class SearchForm extends Component {
           </Grid>
           <Grid item xs={12} sm={6}>
             <PlaceInput
-              id='destination'
-              label='To'
+              id="destination"
+              label="To"
               suggestions={suggestions}
-              onChange={this.handlePlaceChange('destination')}
+              onChange={this.handlePlaceChange("destination")}
               value={destination}
               fullWidth
+              error={errors["destination"]}
               InputLabelProps={{
                 shrink: true,
               }}
@@ -202,16 +252,16 @@ class SearchForm extends Component {
                 <Checkbox
                   checked={isOneWay}
                   onChange={this.handleOneWayChange}
-                  color='default'
+                  color="default"
                 />
               }
-              label='One way'
+              label="One way"
             />
           </Grid>
           <Grid item xs={6}>
             <DateTimePicker
-              id='depart'
-              label='Depart'
+              id="depart"
+              label="Depart"
               fullWidth
               disablePast
               ampm={false}
@@ -224,8 +274,8 @@ class SearchForm extends Component {
           </Grid>
           <Grid item xs={6}>
             <DateTimePicker
-              id='return'
-              label='Return'
+              id="return"
+              label="Return"
               fullWidth
               disablePast
               ampm={false}
@@ -237,20 +287,26 @@ class SearchForm extends Component {
               onChange={this.handleReturnDateChange}
             />
           </Grid>
-          {(navValue === 'flights' || navValue === 'trains') &&
+          {(navValue === "flights" || navValue === "trains") &&
           <Grid item xs={6}>
             <FormControl fullWidth >
-              <InputLabel htmlFor='cabinClass' shrink >Cabin Class</InputLabel>
+              <InputLabel htmlFor="cabinClass" shrink>
+                Cabin Class
+              </InputLabel>
               <Select
                 value={cabinClass}
                 onChange={this.handleCabinClassChange}
                 inputProps={{
-                  name: 'cabinClass',
-                  id: 'cabinClass',
+                  name: "cabinClass",
+                  id: "cabinClass",
                 }}
               >
                 {cabinClassList.map((cabin, i) => {
-                  return <MenuItem value={i} key={i.toString()}>{cabin}</MenuItem>
+                  return (
+                    <MenuItem value={i} key={i.toString()}>
+                      {cabin}
+                    </MenuItem>
+                  )
                 })}
               </Select>
             </FormControl>
@@ -258,9 +314,9 @@ class SearchForm extends Component {
           }
           <Grid item xs={6}>
             <Button
-              type='submit'
-              color='secondary'
-              variant='contained'
+              type="submit"
+              color="secondary"
+              variant="contained"
               fullWidth
               onClick={this.validateSearch}
               className={classes.searchButton}

@@ -1,10 +1,10 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import Downshift from 'downshift';
-import { withStyles } from '@material-ui/core/styles';
-import Paper from '@material-ui/core/Paper';
-import TextField from '@material-ui/core/TextField';
-import MenuItem from '@material-ui/core/MenuItem';
+import React from "react";
+import PropTypes from "prop-types";
+import Downshift from "downshift";
+import { withStyles } from "@material-ui/core/styles";
+import Paper from "@material-ui/core/Paper";
+import TextField from "@material-ui/core/TextField";
+import MenuItem from "@material-ui/core/MenuItem";
 
 function renderInput(inputProps) {
   const { InputProps, classes, ref, ...other } = inputProps;
@@ -25,7 +25,7 @@ function renderInput(inputProps) {
 
 function renderSuggestion({ suggestion, index, itemProps, highlightedIndex, selectedItem }) {
   const isHighlighted = highlightedIndex === index;
-  const isSelected = (selectedItem || '').indexOf(suggestion.label) > -1;
+  const isSelected = (selectedItem || "").indexOf(suggestion.label) > -1;
 
   return (
     <MenuItem
@@ -69,10 +69,10 @@ function getSuggestions(inputValue, suggestions=[]) {
 const styles = theme => ({
   container: {
     flexGrow: 1,
-    position: 'relative',
+    position: "relative",
   },
   paper: {
-    position: 'absolute',
+    position: "absolute",
     zIndex: 1,
     marginTop: theme.spacing.unit,
     left: 0,
@@ -82,24 +82,43 @@ const styles = theme => ({
     margin: `${theme.spacing.unit / 2}px ${theme.spacing.unit / 4}px`,
   },
   inputRoot: {
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   }
 });
 
 const PlaceInput = props => {
-  const { classes, suggestions, value, onChange, id, placeholder, label, fullWidth, InputLabelProps } = props;
+  const {
+    classes,
+    suggestions,
+    value,
+    onChange,
+    id,
+    placeholder,
+    label,
+    fullWidth,
+    InputLabelProps,
+    error
+  } = props;
 
   return (
     <Downshift inputValue={value} onInputValueChange={onChange}>
-      {({ getInputProps, getItemProps, isOpen, inputValue, selectedItem, highlightedIndex }) => (
+      {({
+        getInputProps,
+        getItemProps,
+        isOpen,
+        inputValue,
+        selectedItem,
+        highlightedIndex
+      }) => (
         <div className={classes.container}>
           {renderInput({
             fullWidth: fullWidth || false,
             classes,
             InputProps: getInputProps({
-              id: id || 'place-input',
+              id: id || "place-input",
               placeholder: placeholder
             }),
+            error: error,
             label: label,
             InputLabelProps: InputLabelProps || {}
           })}
@@ -132,6 +151,7 @@ PlaceInput.propTypes = {
   label: PropTypes.string,
   fullWidth: PropTypes.bool,
   InputLabelProps: PropTypes.object,
+  error: PropTypes.bool,
 };
 
 export default withStyles(styles)(PlaceInput);
