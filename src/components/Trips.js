@@ -27,7 +27,7 @@ const styles = theme => ({
     paddingTop: 96,
     position: "fixed",
     width: drawerWidth,
-    zIndex: -1,
+    zIndex: 0,
     borderRadius: 0
   },
   container: {
@@ -37,7 +37,7 @@ const styles = theme => ({
     }
   },
   notFoundContainer: {
-    marginTop: "15%",
+    marginTop: "10%",
     padding: "10%"
   }
 });
