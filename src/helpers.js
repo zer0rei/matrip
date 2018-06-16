@@ -1,5 +1,5 @@
 export function validateName(name) {
-  const re = /^[a-z ,.'-]*$/i;
+  const re = /^[a-z]+(([',.-][a-z ]| [a-z])?[a-zA-Z]*)$/i;
   return re.test(String(name));
 }
 
@@ -26,4 +26,18 @@ export function validateEmail(email) {
 export function validatePassword(password) {
   const re = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
   return re.test(String(password));
+}
+
+export function toISO(format) {
+  // format: DDMMYYHHmm
+  if (format.length !== 10)
+    return null;
+
+  const day = format.substr(0, 2);
+  const month = format.substr(2, 2);
+  const year = "20" + format.substr(4, 2);
+  const hour = format.substr(6, 2);
+  const minute = format.substr(8, 2);
+  return [year, month, day].join("-") +
+    "T" + [hour, minute].join(":");
 }

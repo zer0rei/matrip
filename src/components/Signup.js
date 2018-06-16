@@ -159,6 +159,7 @@ class Login extends Component {
               onChange={this.handleChange("firstName")}
               error={errors["firstName"]}
               fullWidth
+              required
             />
           </Grid>
           <Grid item xs={6}>
@@ -169,6 +170,7 @@ class Login extends Component {
               onChange={this.handleChange("lastName")}
               error={errors["lastName"]}
               fullWidth
+              required
             />
           </Grid>
           <Grid item xs={12} sm={6}>

@@ -1,7 +1,7 @@
-import { createMuiTheme } from '@material-ui/core/styles';
-import blueGrey from '@material-ui/core/colors/blueGrey';
-import red from '@material-ui/core/colors/red';
-import deepOrange from '@material-ui/core/colors/deepOrange';
+import { createMuiTheme } from "@material-ui/core/styles";
+import blueGrey from "@material-ui/core/colors/blueGrey";
+import red from "@material-ui/core/colors/red";
+import deepOrange from "@material-ui/core/colors/deepOrange";
 
 const primary = blueGrey;
 const secondary = red;

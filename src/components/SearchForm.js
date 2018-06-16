@@ -14,13 +14,13 @@ import InputLabel from "@material-ui/core/InputLabel";
 import MenuItem from "@material-ui/core/MenuItem";
 import Button from "@material-ui/core/Button";
 import DateFnsUtils from "material-ui-pickers/utils/date-fns-utils";
-import { addDays, isAfter } from "date-fns"
+import { addDays, isAfter, format } from "date-fns"
 import MuiPickersUtilsProvider from "material-ui-pickers/utils/MuiPickersUtilsProvider";
 import DateTimePicker from "material-ui-pickers/DateTimePicker";
 import PlaceInput from "./PlaceInput";
 
 function getSuggestions(query, type) {
-  // TODO: add suggestions
+  // TODO: add suggestion requests
   if (type === "flights") {
     return [{label: "test"}, {label: "test2"}];
   } else if (type === "trains") {
@@ -58,24 +58,36 @@ const styles = theme => ({
 class SearchForm extends Component {
   constructor(props) {
     super(props);
+
+    const {
+      navValue,
+      source,
+      destination,
+      numTravellers,
+      isOneWay,
+      departDate,
+      returnDate,
+      cabinClass
+    } = props.default || {};
+
     this.state = {
-      navValue: "flights",
-      source: "",
-      destination: "",
+      navValue: navValue || "flights",
+      source: source || "",
+      destination: destination || "",
       suggestions: [],
-      isOneWay: true,
-      cabinClass: 0,
+      numTravellers: numTravellers || 1,
+      isOneWay: isOneWay !== undefined ? isOneWay : true,
+      departDate: departDate || new Date(),
+      returnDate: returnDate || addDays(new Date(), 1),
+      cabinClass: cabinClass !== undefined ? cabinClass : 0,
       cabinClassList: ["Economy", "Business", "First Class"],
-      numTravellers: 1,
-      departDate: new Date(),
-      returnDate: addDays(new Date(), 1),
-      response: null,
+      isRequestValid: false,
       errors: {}
     };
   }
 
   handleNavChange = (event, navValue) => {
-    this.setState({ navValue });
+    this.setState({ navValue, isRequestValid: false });
     if (navValue === "flights") {
       this.setState({cabinClassList: ["Economy", "Business", "1st Class"]});
     } else if (navValue === "trains") {
@@ -85,6 +97,7 @@ class SearchForm extends Component {
   
   handlePlaceChange = type => value => {
     let newState = Object.assign({}, this.state);
+    newState.isRequestValid = false;
     if (value !== "") {
       if (type === "source") {
         newState.errors[type] = false;
@@ -102,27 +115,27 @@ class SearchForm extends Component {
   }
 
   handleCabinClassChange = event => {
-    this.setState({ cabinClass: event.target.value });
+    this.setState({ cabinClass: event.target.value, isRequestValid: false });
   }
 
   handleNumTravellersChange = event => {
     let num = event.target.value;
     if (num >= 1 && num <= 6)
-      this.setState({ numTravellers: Math.floor(num) });
+      this.setState({ numTravellers: Math.floor(num), isRequestValid: false });
   }
 
   handleOneWayChange = event => {
-    this.setState({ isOneWay: event.target.checked });
+    this.setState({ isOneWay: event.target.checked, isRequestValid: false });
   }
 
   handleDepartDateChange = (date) => {
     if (isAfter(date, new Date()))
-      this.setState({ departDate: date });
+      this.setState({ departDate: date, isRequestValid: false });
   }
 
   handleReturnDateChange = (date) => {
     if (isAfter(date, new Date()))
-      this.setState({ returnDate: date });
+      this.setState({ returnDate: date, isRequestValid: false });
   }
 
   validateSearch = () => {
@@ -145,32 +158,41 @@ class SearchForm extends Component {
     }
 
     if (isValid) {
-      // TODO: request
-      newState.response = {from: "rak", to: "ory"};
+      newState.isRequestValid = true;
     }
 
     this.setState(newState);
   }
 
   render() {
-    const { classes } = this.props;
+    const { classes, variant } = this.props;
     const {
       navValue,
       source,
       destination,
       suggestions,
       numTravellers,
-      cabinClass,
-      cabinClassList,
       isOneWay,
       departDate,
       returnDate,
-      response,
+      cabinClass,
+      cabinClassList,
+      isRequestValid,
       errors
     } = this.state;
 
-    if (response !== null) {
-      return <Redirect to={`/routes/${response.from}/${response.to}`}/>; 
+    let redirect = null;
+    if (isRequestValid) {
+      const query = `?numtravellers=${numTravellers}` +
+        `&isoneway=${isOneWay}` +
+        `&departdate=${format(departDate, "DDMMYYHHmm")}` +
+        (isOneWay ? `` : `&returndate=${format(returnDate, "DDMMYYHHmm")}`) +
+        (((navValue === "flights") || (navValue === "trains")) ? `&cabinclass=${cabinClass}` : ``);
+
+      redirect = <Redirect to={`/trips/${navValue}/${source}/${destination}` + query}/>; 
+
+      if (variant !== 'sidebar')
+        return redirect;
     }
     return (
       <MuiPickersUtilsProvider utils={DateFnsUtils}>
@@ -181,6 +203,7 @@ class SearchForm extends Component {
           direction="row"
           justify="center"
         >
+          {isRequestValid && variant === 'sidebar' && redirect}
           <Grid item xs={12}>
             <BottomNavigation
               value={navValue}
@@ -188,24 +211,22 @@ class SearchForm extends Component {
               onChange={this.handleNavChange}
               showLabels
             >
-              <BottomNavigationAction classes={{
-                selected: classes.navElemSelected,
-                root: classes.navElem
-                }} value="flights" label="Flights"
-              />
-              <BottomNavigationAction classes={{
-                selected: classes.navElemSelected,
-                root: classes.navElem
-                }} value="trains" label="Trains"
-              />
-              <BottomNavigationAction classes={{
-                selected: classes.navElemSelected,
-                root: classes.navElem
-                }} value="buses" label="Buses"
-              />
+            {["flights", "trains", "buses"].map((type, i) => {
+              return (
+                <BottomNavigationAction
+                  classes={{
+                    selected: classes.navElemSelected,
+                    root: classes.navElem
+                  }}
+                  value={type}
+                  label={type.charAt(0).toUpperCase() + type.slice(1)}
+                  key={i}
+                />
+              )
+            })}
             </BottomNavigation>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={variant === "sidebar" ? 12 : 6}>
             <PlaceInput
               id="source"
               label="From"
@@ -219,7 +240,7 @@ class SearchForm extends Component {
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={variant === "sidebar" ? 12 : 6}>
             <PlaceInput
               id="destination"
               label="To"
@@ -233,7 +254,7 @@ class SearchForm extends Component {
               }}
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={variant === "sidebar" ? 12 : 6}>
             <TextField
               id="numTravellers"
               label="Travellers"
@@ -246,7 +267,7 @@ class SearchForm extends Component {
               }}
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={variant === "sidebar" ? 12 : 6}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -258,7 +279,7 @@ class SearchForm extends Component {
               label="One way"
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={variant === "sidebar" ? 12 : 6}>
             <DateTimePicker
               id="depart"
               label="Depart"
@@ -272,7 +293,7 @@ class SearchForm extends Component {
               onChange={this.handleDepartDateChange}
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={variant === "sidebar" ? 12 : 6}>
             <DateTimePicker
               id="return"
               label="Return"
@@ -288,7 +309,7 @@ class SearchForm extends Component {
             />
           </Grid>
           {(navValue === "flights" || navValue === "trains") &&
-          <Grid item xs={6}>
+          <Grid item xs={variant === "sidebar" ? 12 : 6}>
             <FormControl fullWidth >
               <InputLabel htmlFor="cabinClass" shrink>
                 Cabin Class
@@ -312,7 +333,7 @@ class SearchForm extends Component {
             </FormControl>
           </Grid>
           }
-          <Grid item xs={6}>
+          <Grid item xs={variant === "sidebar" ? 10 : 6}>
             <Button
               type="submit"
               color="secondary"
@@ -332,6 +353,8 @@ class SearchForm extends Component {
 
 SearchForm.propTypes = {
   classes: PropTypes.object.isRequired,
+  variant: PropTypes.string,
+  default: PropTypes.object,
 };
 
 export default withStyles(styles)(SearchForm);

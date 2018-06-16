@@ -2,8 +2,7 @@ import React, { Component } from "react";
 import PropTypes from "prop-types";
 import {
   withStyles,
-  MuiThemeProvider,
-  createMuiTheme,
+  MuiThemeProvider
 } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
@@ -12,21 +11,9 @@ import Login from "./Login"
 import Signup from "./Signup"
 import Page404 from "./Page404"
 import BgImage from "../images/background.png";
-import theme from "../themes/default"
+import theme from "../themes/dark"
 
 const blueGrayTransparent = "rgba(84, 110, 122, 0.8)";
-
-const darkTheme = createMuiTheme({
-  palette: {
-    primary: {
-      main: theme.palette.primary.main,
-      light: "white"
-    },
-    secondary: theme.palette.secondary,
-    error: theme.palette.error,
-    type: "dark"
-  }
-});
 
 const styles = theme => ({
   root: {
@@ -71,7 +58,7 @@ class Home extends Component {
   render() {
     const { classes, height, width, show } = this.props;
     return (
-      <MuiThemeProvider theme={darkTheme}>
+      <MuiThemeProvider theme={theme}>
         <Grid
           container
           spacing={16}

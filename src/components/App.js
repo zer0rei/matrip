@@ -21,7 +21,7 @@ import MenuItem from "@material-ui/core/MenuItem";
 import theme from "../themes/default";
 import Home from "./Home";
 import Dashboard from "./Dashboard";
-import Routes from "./Routes";
+import Trips from "./Trips";
 
 const styles = {
   root: {
@@ -109,7 +109,7 @@ class App extends Component {
         <MuiThemeProvider theme={theme}>
           <div className={classes.root}>
             <CssBaseline />
-            <AppBar position="static">
+            <AppBar position="sticky">
               <Toolbar>
                 <Typography
                   variant="title"
@@ -200,10 +200,16 @@ class App extends Component {
                 path="/dashboard"
                 component={Dashboard}
               />
-              <Route
-                path="/routes/:from/:to"
-                component={Routes}
-              />
+              {["flights", "trains", "buses"].map((type, i) => {
+                  return (
+                    <Route
+                      path={`/trips/${type}/:from/:to`}
+                      component={Trips}
+                      key={i}
+                    />
+                  )
+                })
+              }
               <Route
                 render={props => (<Home {...props}
                   height={height}
