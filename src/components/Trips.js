@@ -76,9 +76,10 @@ class Trips extends Component {
       source: "RAK",
       destination: "ORY",
       departDate: new Date("2018-06-18T03:00:00"),
-      arrivalDate: new Date("2018-06-18T06:00:00"),
+      arrivalDate: new Date("2018-06-18T06:30:00"),
       price: 1185.0,
       direct: false,
+      carrier: "Royal Air Maroc",
     },
     {
       source: "RAK",
@@ -88,12 +89,33 @@ class Trips extends Component {
       price: 1463.0,
       direct: true,
       returnDirect: false,
-    }];
+      carrier: "transavia",
+      returnCarrier: "Tuifly.be"
+    },
+    {
+      source: "RAK",
+      destination: "ORY",
+      departDate: new Date("2018-06-18T06:30:00"),
+      arrivalDate: new Date("2018-06-18T09:30:00"),
+      price: 995.0,
+      direct: true,
+      carrier: "Iberia"
+    },
+    {
+      source: "RAK",
+      destination: "ORY",
+      departDate: new Date("2018-06-18T16:30:00"),
+      arrivalDate: new Date("2018-06-18T19:20:00"),
+      price: 1995.0,
+      direct: true,
+      carrier: "Royal Air Maroc"
+    }
+    ];
     this.setState({ request, response });
   }
 
   render() {
-    const { classes } = this.props;
+    const { classes, isLoggedIn } = this.props;
     const { request, response } = this.state;
 
     let trips;
@@ -104,7 +126,11 @@ class Trips extends Component {
         />
       </div>;
     } else {
-      trips = <TripList trips={response} type={request.navValue}/>;
+      trips = <TripList
+        trips={response}
+        type={request.navValue}
+        isLoggedIn={isLoggedIn}
+      />;
     }
     return (
       <div className={classes.root}>
@@ -130,6 +156,7 @@ class Trips extends Component {
 
 Trips.propTypes = {
   classes: PropTypes.object.isRequired,
+  isLoggedIn: PropTypes.bool.isRequired,
 };
 
 export default compose(

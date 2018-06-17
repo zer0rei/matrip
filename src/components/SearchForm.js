@@ -14,7 +14,7 @@ import InputLabel from "@material-ui/core/InputLabel";
 import MenuItem from "@material-ui/core/MenuItem";
 import Button from "@material-ui/core/Button";
 import DateFnsUtils from "material-ui-pickers/utils/date-fns-utils";
-import { addDays, isAfter, format } from "date-fns"
+import { addMinutes, addDays, isAfter, format } from "date-fns"
 import MuiPickersUtilsProvider from "material-ui-pickers/utils/MuiPickersUtilsProvider";
 import DatePicker from "material-ui-pickers/DatePicker";
 import DateTimePicker from "material-ui-pickers/DateTimePicker";
@@ -78,7 +78,7 @@ class SearchForm extends Component {
       suggestions: [],
       numTravellers: numTravellers || 1,
       isOneWay: isOneWay !== undefined ? isOneWay : true,
-      departDate: departDate || new Date(),
+      departDate: departDate || addMinutes(new Date(), 30),
       returnDate: returnDate || addDays(new Date(), 1),
       cabinClass: cabinClass !== undefined ? cabinClass : 0,
       cabinClassList: ["Economy", "Business", "First Class"],

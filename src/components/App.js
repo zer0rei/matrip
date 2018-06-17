@@ -204,7 +204,9 @@ class App extends Component {
                   return (
                     <Route
                       path={`/trips/${type}/:from/:to`}
-                      component={Trips}
+                      render={props => (<Trips {...props}
+                        isLoggedIn={isLoggedIn}
+                      />)}
                       key={i}
                     />
                   )

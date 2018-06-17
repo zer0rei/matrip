@@ -9,6 +9,7 @@ import CardContent from '@material-ui/core/CardContent';
 import Typography from "@material-ui/core/Typography";
 import Button from "@material-ui/core/Button";
 import Icon from "@material-ui/core/Icon";
+import IconButton from "@material-ui/core/IconButton";
 import { format, formatDistanceStrict } from "date-fns";
 
 const styles = theme => ({
@@ -37,15 +38,23 @@ const styles = theme => ({
     fontWeight: "normal",
     fontSize: "0.7em"
   },
+  favoriteContainer: {
+    width: "100%",
+    height: 8
+  },
+  favorite: {
+    position: "absolute",
+    right: 32
+  }
 });
 
 const TripCard = props => {
-  const { classes, trip, type } = props;
-  const renderTrip = (src, dst, dptDate, arrvDate, direct, link) => {
+  const { classes, trip, type, key, favorite, onFavoriteChange } = props;
+  const renderTrip = (src, dst, dptDate, arrvDate, direct, link, carrier) => {
     return (
       <Grid
         container
-        spacing={32}
+        spacing={8}
         alignItems="center"
         direction="row"
         justify="center"
@@ -160,6 +169,15 @@ const TripCard = props => {
                 Select
               </Button>
             </CardActions>
+            <CardContent>
+              <Typography
+                align="right"  
+                variant="subheading"
+                color="textSecondary"
+              >
+                {carrier}
+              </Typography>
+            </CardContent>
           </Grid>
         </Grid>
       </Grid>
@@ -167,13 +185,28 @@ const TripCard = props => {
   }
   return (
     <Card className={classes.root}>
+      {favorite !== undefined &&
+      <CardActions className={classes.favoriteContainer}>
+        <IconButton
+          className={classes.favorite}
+          color="secondary"
+          aria-label="Add to favorite"
+          onClick={onFavoriteChange}
+        >
+          <Icon>
+            { favorite ? "favorite" : "favorite_border" }
+          </Icon>
+        </IconButton>
+      </CardActions>
+      }
       {renderTrip(
         trip.source,
         trip.destination,
         trip.departDate,
         trip.arrivalDate,
         trip.direct,
-        trip.link
+        trip.link,
+        trip.carrier
       )}
       {trip.returnDate && renderTrip(
         trip.destination,
@@ -181,7 +214,8 @@ const TripCard = props => {
         trip.returnDate,
         trip.returnArrivalDate,
         trip.returnDirect,
-        trip.returnLink
+        trip.returnLink,
+        trip.returnCarrier
       )}
     </Card>
   );
@@ -190,7 +224,9 @@ const TripCard = props => {
 TripCard.propTypes = {
   classes: PropTypes.object.isRequired,
   trip: PropTypes.object.isRequired,
-  type: PropTypes.string.isRequired
+  type: PropTypes.string.isRequired,
+  favorite: PropTypes.bool,
+  onFavoriteChange: PropTypes.func,
 };
 
 export default withStyles(styles)(TripCard);
