@@ -5,6 +5,7 @@
   "homepage": "https://zer0rei.github.io/matrip",
   "dependencies": {
     "@material-ui/core": "^1.2.0",
+    "axios": "^0.18.0",
     "date-fns": "2.0.0-alpha.7",
     "downshift": "^1.31.16",
     "material-ui-pickers": "^1.0.0-rc.9",

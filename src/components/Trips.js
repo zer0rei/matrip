@@ -12,6 +12,7 @@ import queryString from "query-string";
 import SearchForm from "./SearchForm";
 import darkTheme from "../themes/dark";
 import Page404 from "./Page404";
+import TripList from "./TripList";
 import { toISO } from "../helpers";
 
 const drawerWidth = 350;
@@ -59,11 +60,11 @@ class Trips extends Component {
       navValue: type,
       source: match.params.from,
       destination: match.params.to,
-      numTravellers: parseInt(query.numtravellers),
+      numTravellers: parseInt(query.numtravellers, 10),
       isOneWay: query.isoneway === "true",
       departDate: new Date(toISO(query.departdate)),
       returnDate: query.returndate && new Date(toISO(query.returndate)),
-      cabinClass: query.cabinclass && parseInt(query.cabinclass)
+      cabinClass: query.cabinclass && parseInt(query.cabinclass, 10)
     }
     return request;
   }
@@ -71,7 +72,23 @@ class Trips extends Component {
   componentDidMount() {
     const request = this.getRequestFromUrl();
     // TODO: request
-    const response = [];
+    const response = [{
+      source: "RAK",
+      destination: "ORY",
+      departDate: new Date("2018-06-18T03:00:00"),
+      arrivalDate: new Date("2018-06-18T06:00:00"),
+      price: 1185.0,
+      direct: false,
+    },
+    {
+      source: "RAK",
+      destination: "ORY",
+      departDate: new Date("2018-06-18T02:30:00"),
+      returnDate: new Date("2018-09-18T06:30:00"),
+      price: 1463.0,
+      direct: true,
+      returnDirect: false,
+    }];
     this.setState({ request, response });
   }
 
@@ -87,7 +104,7 @@ class Trips extends Component {
         />
       </div>;
     } else {
-      trips = null;
+      trips = <TripList trips={response} type={request.navValue}/>;
     }
     return (
       <div className={classes.root}>

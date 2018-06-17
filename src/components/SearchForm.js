@@ -16,13 +16,14 @@ import Button from "@material-ui/core/Button";
 import DateFnsUtils from "material-ui-pickers/utils/date-fns-utils";
 import { addDays, isAfter, format } from "date-fns"
 import MuiPickersUtilsProvider from "material-ui-pickers/utils/MuiPickersUtilsProvider";
+import DatePicker from "material-ui-pickers/DatePicker";
 import DateTimePicker from "material-ui-pickers/DateTimePicker";
 import PlaceInput from "./PlaceInput";
 
 function getSuggestions(query, type) {
   // TODO: add suggestion requests
   if (type === "flights") {
-    return [{label: "test"}, {label: "test2"}];
+    return [{label: "RAK"}, {label: "ORY"}];
   } else if (type === "trains") {
     return [];
   } else if (type === "buses") {
@@ -181,6 +182,41 @@ class SearchForm extends Component {
       errors
     } = this.state;
 
+    const datePicker = (date, handle, isReturn=false) => {
+      if (navValue === "flights") {
+        return (
+          <DatePicker
+            id={isReturn ? "return" : "depart"}
+            label={isReturn ? "Return" : "Depart"}
+            fullWidth
+            disablePast
+            value={date}
+            disabled={isReturn && isOneWay}
+            InputLabelProps={{
+              shrink: true
+            }}
+            onChange={handle}
+          />
+        )
+      }
+
+      return (
+        <DateTimePicker
+          id={isReturn ? "return" : "depart"}
+          label={isReturn ? "Return" : "Depart"}
+          fullWidth
+          disablePast
+          ampm={false}
+          value={date}
+          disabled={isReturn && isOneWay}
+          InputLabelProps={{
+            shrink: true
+          }}
+          onChange={handle}
+        />
+      )
+    };
+
     let redirect = null;
     if (isRequestValid) {
       const query = `?numtravellers=${numTravellers}` +
@@ -280,33 +316,10 @@ class SearchForm extends Component {
             />
           </Grid>
           <Grid item xs={variant === "sidebar" ? 12 : 6}>
-            <DateTimePicker
-              id="depart"
-              label="Depart"
-              fullWidth
-              disablePast
-              ampm={false}
-              value={departDate}
-              InputLabelProps={{
-                shrink: true
-              }}
-              onChange={this.handleDepartDateChange}
-            />
+            {datePicker(departDate, this.handleDepartDateChange)}
           </Grid>
           <Grid item xs={variant === "sidebar" ? 12 : 6}>
-            <DateTimePicker
-              id="return"
-              label="Return"
-              fullWidth
-              disablePast
-              ampm={false}
-              disabled={isOneWay}
-              value={returnDate}
-              InputLabelProps={{
-                shrink: true
-              }}
-              onChange={this.handleReturnDateChange}
-            />
+            {datePicker(returnDate, this.handleReturnDateChange, true)}
           </Grid>
           {(navValue === "flights" || navValue === "trains") &&
           <Grid item xs={variant === "sidebar" ? 12 : 6}>
