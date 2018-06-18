@@ -11,6 +11,7 @@ import Drawer from "@material-ui/core/Drawer";
 import queryString from "query-string";
 import { format } from "date-fns";
 import axios from "axios";
+import qs from "qs";
 import SearchForm from "./SearchForm";
 import darkTheme from "../themes/dark";
 import Page404 from "./Page404";
@@ -50,19 +51,19 @@ function getFlights(request, callback) {
    axios({
     method: 'post',
     url: `${BACKEND_API}/TRANSPORTS_APP/controller/flights.php`,
-    data: {
+    data: qs.stringify({
       src: request.source,
       dst: request.destination,
       departDate: format(request.departDate, "YYYY-MM-DD"),
       returnDate: request.isOneWay ?
         "" : format(request.returnDate, "YYYY-MM-DD"),
-    }
+    })
   })
   .then((response) => {
-    callback(request, response.data);
+    callback(request, JSON.parse(response.data));
   })
   .catch((error) => {
-    callback(request, []);
+    callback(request, {});
     console.log(error);
   });
 }
@@ -72,11 +73,11 @@ function getTrains(request, callback) {
     return axios({
       method: 'post',
       url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterTrain.php`,
-      data: {
+      data: qs.stringify({
         gareDepart: request.source,
         gareDestination: request.destination,
         heureDepart: format(request.departDate, "HH:mm:ss"),
-      }
+      })
     });
   };
 
@@ -84,20 +85,21 @@ function getTrains(request, callback) {
     return request.isOneWay ? null : axios({
       method: 'post',
       url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterTrain.php`,
-      data: {
+      data: qs.stringify({
         gareDepart: request.destination,
         gareDestination: request.source,
         heureDepart: format(request.returnDate, "HH:mm:ss"),
-      }
+      })
     });
   };
 
   axios.all([dep(), ret()])
   .then(axios.spread(function (depResponse, retResponse) {
-    if (request.isOneWay)
+    if (request.isOneWay) {
       callback(request, depResponse.data);
-    else
+    } else {
       callback(request, depResponse.data, retResponse.data);
+    }
   }))
   .catch((error) => {
     callback(request, []);
@@ -110,11 +112,11 @@ function getBuses(request, callback) {
     return axios({
       method: 'post',
       url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterBus.php`,
-      data: {
+      data: qs.stringify({
         from: request.source,
         to: request.destination,
         ville: request.city
-      }
+      })
     });
   };
 
@@ -122,11 +124,11 @@ function getBuses(request, callback) {
     return axios({
       method: 'post',
       url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterBus.php`,
-      data: {
+      data: qs.stringify({
         from: request.destination,
         to: request.source,
         ville: request.city
-      }
+      })
     });
   };
 
@@ -153,11 +155,11 @@ function getCarpools(request, callback) {
     return axios({
       method: 'post',
       url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterCovoit.php`,
-      data: {
+      data: qs.stringify({
         ville_depart: request.source,
         ville_destination: request.destination,
-        date_voyage: format(request.departDate, "YYYY-MM-DD"),
-      }
+        //date_voyage: format(request.departDate, "YYYY-MM-DD"),
+      })
     });
   };
 
@@ -165,20 +167,21 @@ function getCarpools(request, callback) {
     return request.isOneWay ? null : axios({
       method: 'post',
       url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterCovoit.php`,
-      data: {
+      data: qs.stringify({
         ville_depart: request.destination,
         ville_destination: request.source,
-        date_voyage: format(request.returnDate, "YYYY-MM-DD"),
-      }
+        //date_voyage: format(request.returnDate, "YYYY-MM-DD"),
+      })
     });
   };
 
   axios.all([dep(), ret()])
   .then(axios.spread(function (depResponse, retResponse) {
-    if (request.isOneWay)
+    if (request.isOneWay) {
       callback(request, depResponse.data);
-    else
+    } else {
       callback(request, depResponse.data, retResponse.data);
+    }
   }))
   .catch((error) => {
     callback(request, []);
@@ -225,12 +228,54 @@ class Trips extends Component {
     } else if (navValue === "carpools") {
       getCarpools(request, this.getCarpoolsCallback);
     }
+
+    this.setState({ request });
   }
 
   getFlightsCallback = (request, response) => {
+    if (response === undefined || response === {} ||
+      response.Quotes === undefined || response.Quotes === [])
+      return;
+
+    let trips = response.Quotes.map(trip => {
+      let inCarr = response.Carriers.filter((carr) => {
+        return carr.CarrierId === trip.OutboundLeg.CarrierIds[0];
+      });
+
+      let res1 = {
+        id: trip.id,
+        source: request.source,
+        destination: request.destination,
+        departDate: new Date(trip.OutboundLeg.DepartureDate),
+        price: request.numTravellers * trip.MinPrice,
+        direct: trip.Direct,
+        carrier: inCarr[0].Name
+      };
+
+      if (request.isOneWay)
+        return res1;
+
+
+      let outCarr = response.Carriers.filter((carr) => {
+        return carr.CarrierId === trip.InboundLeg.CarrierIds[0];
+      });
+
+      let res2 = {
+        returnDate: new Date(trip.InboundLeg.DepartureDate),
+        returnDirect: trip.Direct,
+        returnCarrier: outCarr[0].Name
+      }
+
+      return Object.assign(res1, res2);
+    });
+
+    this.setState({ response: trips });
   }
 
   getTrainsCallback = (request, response, response2=undefined) => {
+    if (response === [])
+      return;
+
     let trips1 = response.map(trip => {
       return {
         id: trip.id,
@@ -242,13 +287,15 @@ class Trips extends Component {
           "YYYY-MM-DDT") + trip.heureArrivee),
         price: request.numTravellers * (request.cabinClass === 0 ?
           trip.prix_deuxieme : trip.prix_premier),
-        direct: trip.correspondance === "directe",
+        direct: trip.correspondance.toUpperCase() === "DIRECT",
         carrier: "ONCF",
       }
     });
 
-    if (request.isOneWay || response2 === undefined)
+    if (request.isOneWay || response2 === undefined) {
+      this.setState({ response: trips1 });
       return trips1;
+    }
 
     let trips2 = response2.map(trip => {
       return {
@@ -277,13 +324,19 @@ class Trips extends Component {
   }
 
   getCarpoolsCallback = (request, response, response2=undefined) => {
+    if (response === [])
+      return;
+
     let res = response.filter(r => {
       return request.numTravellers < parseInt(r.nb_places_proposes, 10);
     });
 
-    let res2 = response2.filter(r => {
-      return request.numTravellers < parseInt(r.nb_places_proposes, 10);
-    });
+    let res2;
+    if (response2 !== undefined) {
+      res2 = response2.filter(r => {
+        return request.numTravellers < parseInt(r.nb_places_proposes, 10);
+      });
+    }
 
     let trips1 = res.map(trip => {
       return {
@@ -291,21 +344,23 @@ class Trips extends Component {
         source: trip.ville_depart,
         destination: trip.ville_destination,
         departDate: new Date(trip.date_voyage + "T" + trip.heure_voyage),
-        price: request.numTravellers * trip.prix,
+        price: request.numTravellers * parseInt(trip.prix),
         carrier: trip.proposer.prenom + " " + trip.proposer.nom,
         direct: true,
       }
     });
 
-    if (request.isOneWay || response2 === undefined)
-      return trips1;
+    if (request.isOneWay || response2 === undefined) {
+      this.setState({ response: trips1 });
+      return;
+    }
 
     let trips2 = res2.map(trip => {
       return {
         returnDate: new Date(trip.date_voyage + "T" + trip.heure_voyage),
         returnDirect: true,
         returnCarrier: trip.proposer.prenom + " " + trip.proposer.nom,
-        returnPrice: request.numTravellers * trip.prix,
+        returnPrice: request.numTravellers * parseInt(trip.prix),
       }
     });
 

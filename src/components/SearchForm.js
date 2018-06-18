@@ -19,6 +19,7 @@ import MuiPickersUtilsProvider from "material-ui-pickers/utils/MuiPickersUtilsPr
 import DatePicker from "material-ui-pickers/DatePicker";
 import DateTimePicker from "material-ui-pickers/DateTimePicker";
 import axios from "axios";
+import qs from "qs";
 import PlaceInput from "./PlaceInput";
 import { BACKEND_API } from "../config";
 
@@ -27,12 +28,12 @@ function getPlaceSuggestions(query, type, callback) {
     axios({
       method: 'post',
       url: `${BACKEND_API}/TRANSPORTS_APP/controller/suggestions.php`,
-      data: {query: query},
+      data: qs.stringify({query: query}),
     })
     .then((response) => {
-      let places = response.data.Places.map(place => {
+      let places = JSON.parse(response.data).Places.map(place => {
         return {
-          nom: place.PlaceId
+          nom: place.PlaceId.split("-")[0]
         }
       });
       callback(places);
@@ -122,6 +123,10 @@ class SearchForm extends Component {
       cabinClass
     } = props.default || {};
 
+    const cabinList = navValue === "flights" ?
+      ["Economy", "Business", "First Class"] : 
+      ["2nd Class", "1st Class"];
+
     this.state = {
       navValue: navValue || "flights",
       source: source || "",
@@ -133,7 +138,7 @@ class SearchForm extends Component {
       departDate: departDate || addMinutes(new Date(), 30),
       returnDate: returnDate || addDays(new Date(), 1),
       cabinClass: cabinClass !== undefined ? cabinClass : 0,
-      cabinClassList: ["Economy", "Business", "First Class"],
+      cabinClassList: cabinList,
       isRequestValid: false,
       errors: {}
     };

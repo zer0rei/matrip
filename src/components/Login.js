@@ -7,6 +7,7 @@ import Typography from "@material-ui/core/Typography";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
 import axios from "axios";
+import qs from "qs";
 import { validateEmail, validatePassword } from "../helpers"
 import { BACKEND_API } from "../config";
 
@@ -27,51 +28,49 @@ class Login extends Component {
   }
 
   handleEmailChange = event => {
-    let newState = Object.assign({}, this.state);
+    let newErrors = Object.assign({}, this.state.errors);
 
     if (validateEmail(event.target.value)) 
-      newState.errors["email"] = false;
+      newErrors["email"] = false;
 
-    newState.email = event.target.value;
-    this.setState(newState);
+    this.setState({ email: event.target.value, errors: newErrors });
   }
 
   handlePasswordChange = event => {
-    let newState = Object.assign({}, this.state);
+    let newErrors = Object.assign({}, this.state.errors);
 
     if (validatePassword(event.target.value)) 
-      newState.errors["password"] = false;
+      newErrors["password"] = false;
 
-    newState.password = event.target.value;
-    this.setState(newState);
+    this.setState({ password: event.target.value, errors: newErrors });
   }
 
   handleLogin = () => {
     const { email, password } = this.state;
 
-    let newState = Object.assign({}, this.state);
+    let newErrors = Object.assign({}, this.state.errors);
     let isValid = true;
 
     if (!validateEmail(email)) {
-      newState.errors["email"] = true;
+      newErrors["email"] = true;
       isValid = false;
     } else
-      newState.errors["email"] = false;
+      newErrors["email"] = false;
 
     if (!validatePassword(password)) {
-      newState.errors["password"] = true;
+      newErrors["password"] = true;
       isValid = false;
     } else
-      newState.errors["password"] = false;
+      newErrors["password"] = false;
 
     if (isValid) {
       axios({
         method: 'post',
         url: `${BACKEND_API}/TRANSPORTS_APP/controller/login.php`,
-        data: {
+        data: qs.stringify({
           email: email,
           password: password
-        }
+        })
       })
       .then((response) => {
         if (response.data.status === true) {
@@ -93,7 +92,7 @@ class Login extends Component {
       });
     }
 
-    this.setState(newState);
+    this.setState({ error: newErrors });
   }
 
   render() {

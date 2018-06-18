@@ -14,6 +14,7 @@ import Tooltip from "@material-ui/core/Tooltip";
 import DateFnsUtils from "material-ui-pickers/utils/date-fns-utils";
 import { subYears, isBefore } from "date-fns"
 import axios from "axios";
+import qs from "qs";
 import MuiPickersUtilsProvider from "material-ui-pickers/utils/MuiPickersUtilsProvider";
 import DatePicker from "material-ui-pickers/DatePicker";
 import {
@@ -64,7 +65,7 @@ class Login extends Component {
   }
 
   handleChange = type => event => {
-    let newState = Object.assign({}, this.state);
+    let newErrors = Object.assign({}, this.state.errors);
 
     const value = event.target.value;
     let isValid = false;
@@ -75,10 +76,9 @@ class Login extends Component {
       isValid = validate(value, type);
 
     if (isValid)
-      newState.errors[type] = false;
+      newErrors[type] = false;
 
-    newState[type] = value;
-    this.setState(newState);
+    this.setState({ [type]: value, errors: newErrors });
   }
 
   handleBirthdateChange = date => {
@@ -87,10 +87,9 @@ class Login extends Component {
   }
 
   handleSexChange = event => {
-    let newState = Object.assign({}, this.state);
-    newState.errors["sex"] = false;
-    newState.sex = event.target.value;
-    this.setState(newState);
+    let newErrors = Object.assign({}, this.state.errors);
+    newErrors["sex"] = false;
+    this.setState({ sex: event.target.value, errors: newErrors });
   }
 
   validateSignup = () => {
@@ -106,45 +105,45 @@ class Login extends Component {
       errors
     } = this.state;
 
-    let newState = Object.assign({}, this.state);
+    let newErrors = Object.assign({}, this.state.errors);
     let isValid = true;
 
     ["firstName", "lastName", "email", "phoneNumber", "password"].forEach(type => {
       if (!validate(this.state[type], type)) {
-        newState.errors[type] = true;
+        newErrors[type] = true;
         isValid = false;
       } else
-        newState.errors[type] = false;
+        newErrors[type] = false;
     });
 
     if (password !== confirmPassword) {
-      newState.errors["confirmPassword"] = true;
+      newErrors["confirmPassword"] = true;
       isValid = false;
-    } else
-      newState.errors["confirmPassword"] = false;
-
-    if (sex === "") {
-      newState.errors["sex"] = true;
-      isValid = false;
+    } else {
+      newErrors["confirmPassword"] = false;
     }
 
-    this.setState(newState);
+    if (sex === "") {
+      newErrors["sex"] = true;
+      isValid = false;
+    }
 
     if (isValid) {
       axios({
         method: 'post',
         url: `${BACKEND_API}/TRANSPORTS_APP/controller/inscription.php`,
-        data: {
+        data: qs.stringify({
           nom: lastName,
           prenom: firstName,
           telephone: phoneNumber,
           sexe: sex,
           email: email,
           password: password
-        }
+        })
       })
       .then((response) => {
         if (response.data.status === true) {
+        console.log(response.data);
           this.props.onLoggedIn({
             id: response.data.id,
             lastName: response.data.nom,
@@ -162,6 +161,8 @@ class Login extends Component {
         console.log(error);
       });
     }
+
+    this.setState({ errors: newErrors });
   }
 
   render() {

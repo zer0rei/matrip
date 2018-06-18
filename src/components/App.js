@@ -58,7 +58,7 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      isLoggedIn: true,
+      isLoggedIn: false,
       user: {},
       anchorEl: null,
       width: 0,
