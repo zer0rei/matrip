@@ -58,7 +58,7 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      isLoggedIn: false,
+      isLoggedIn: true,
       user: {},
       anchorEl: null,
       width: 0,
@@ -102,7 +102,14 @@ class App extends Component {
 
   render() {
     const { classes } = this.props;
-    const { isLoggedIn, anchorEl, height, width } = this.state;
+    const {
+      isLoggedIn,
+      user,
+      favorites,
+      anchorEl,
+      height,
+      width
+    } = this.state;
     const open = Boolean(anchorEl);
     return (
       <Router>
@@ -200,7 +207,7 @@ class App extends Component {
                 path="/dashboard"
                 component={Dashboard}
               />
-              {["flights", "trains", "buses"].map((type, i) => {
+              {["flights", "trains", "buses", "carpools"].map((type, i) => {
                   return (
                     <Route
                       path={`/trips/${type}/:from/:to`}

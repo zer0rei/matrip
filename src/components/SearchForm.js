@@ -18,17 +18,70 @@ import { addMinutes, addDays, isAfter, format } from "date-fns"
 import MuiPickersUtilsProvider from "material-ui-pickers/utils/MuiPickersUtilsProvider";
 import DatePicker from "material-ui-pickers/DatePicker";
 import DateTimePicker from "material-ui-pickers/DateTimePicker";
+import axios from "axios";
 import PlaceInput from "./PlaceInput";
+import { BACKEND_API } from "../config";
 
-function getSuggestions(query, type) {
-  // TODO: add suggestion requests
+function getPlaceSuggestions(query, type, callback) {
   if (type === "flights") {
-    return [{label: "RAK"}, {label: "ORY"}];
-  } else if (type === "trains") {
-    return [];
+    axios({
+      method: 'post',
+      url: `${BACKEND_API}/TRANSPORTS_APP/controller/suggestions.php`,
+      data: {query: query},
+    })
+    .then((response) => {
+      let places = response.data.Places.map(place => {
+        return {
+          nom: place.PlaceId
+        }
+      });
+      callback(places);
+    })
+    .catch((error) => {
+      callback([]);
+      console.log(error);
+    });
+  } else if (type === "trains") { 
+    axios({
+      method: 'get',
+      url: `${BACKEND_API}/TRANSPORTS_APP/controller/gares.php`,
+    })
+    .then((response) => {
+      callback(response.data);
+    })
+    .catch((error) => {
+      callback([]);
+      console.log(error);
+    });
   } else if (type === "buses") {
-    return [];
+    axios({
+      method: 'get',
+      url: `${BACKEND_API}/TRANSPORTS_APP/controller/stations.php`,
+    })
+    .then((response) => {
+      callback(response.data);
+    })
+    .catch((error) => {
+      callback([]);
+      console.log(error);
+    });
+  } else if (type === "carpools") {
+    getCitySuggestions(callback);
   }
+}
+
+function getCitySuggestions(callback) {
+  axios({
+    method: 'get',
+    url: `${BACKEND_API}/TRANSPORTS_APP/controller/villes.php`,
+  })
+  .then((response) => {
+    callback(response.data);
+  })
+  .catch((error) => {
+    callback([]);
+    console.log(error);
+  });
 }
 
 const styles = theme => ({
@@ -40,16 +93,13 @@ const styles = theme => ({
     borderRadius: 24,
     borderWidth: 1,
     padding: 8,
-    paddingRight: 16,
-    paddingLeft: 16,
+    paddingRight: 12,
+    paddingLeft: 12,
     borderStyle: "solid",
     borderColor: "white"
   },
   navElem: {
-    border: "none",
-    padding: 8,
-    paddingRight: 20,
-    paddingLeft: 20
+    border: "none"
   },
   searchButton: {
     marginTop: 16
@@ -64,6 +114,7 @@ class SearchForm extends Component {
       navValue,
       source,
       destination,
+      city,
       numTravellers,
       isOneWay,
       departDate,
@@ -75,6 +126,7 @@ class SearchForm extends Component {
       navValue: navValue || "flights",
       source: source || "",
       destination: destination || "",
+      city: city || "",
       suggestions: [],
       numTravellers: numTravellers || 1,
       isOneWay: isOneWay !== undefined ? isOneWay : true,
@@ -87,32 +139,45 @@ class SearchForm extends Component {
     };
   }
 
+  suggestionsCallback = (response) => {
+    let suggestions = response.map((s) => {
+      return {label: s.nom};
+    });
+    this.setState({ suggestions });
+  }
+
   handleNavChange = (event, navValue) => {
     this.setState({ navValue, isRequestValid: false });
     if (navValue === "flights") {
       this.setState({cabinClassList: ["Economy", "Business", "1st Class"]});
     } else if (navValue === "trains") {
-      this.setState({cabinClassList: ["2nd Class", "1st Class", "Single Bed"]});
+      this.setState({cabinClassList: ["2nd Class", "1st Class"]});
     }
   }
   
   handlePlaceChange = type => value => {
-    let newState = Object.assign({}, this.state);
-    newState.isRequestValid = false;
+    let newErrors = Object.assign({}, this.state.errors);
+    this.setState({isRequestValid: false});
     if (value !== "") {
-      if (type === "source") {
-        newState.errors[type] = false;
+      if (type === "source" || type === "city") {
+        newErrors[type] = false;
       }
       if (type === "destination" && value !== this.state.source) {
-        newState.errors[type] = false; 
+        newErrors[type] = false; 
       }
     }
 
-    const suggestions = getSuggestions(value, this.state.navValue);
-    newState[type] = value;
-    newState.suggestions = suggestions || [];
+    if (type === "city") {
+      getCitySuggestions(this.suggestionsCallback);
+    } else {
+      getPlaceSuggestions(
+        value,
+        this.state.navValue,
+        this.suggestionsCallback
+      );
+    }
 
-    this.setState(newState);
+    this.setState({[type]: value, errors: newErrors});
   }
 
   handleCabinClassChange = event => {
@@ -143,6 +208,13 @@ class SearchForm extends Component {
     let newState = Object.assign({}, this.state);
     let isValid = true;
 
+    if (this.state.navValue === "buses") {
+      if (this.state.city === "") {
+        newState.errors["city"] = true;
+        isValid = false;
+      }
+    }
+
     if (this.state.source === "") {
       newState.errors["source"] = true;
       isValid = false;
@@ -171,6 +243,7 @@ class SearchForm extends Component {
       navValue,
       source,
       destination,
+      city,
       suggestions,
       numTravellers,
       isOneWay,
@@ -223,7 +296,8 @@ class SearchForm extends Component {
         `&isoneway=${isOneWay}` +
         `&departdate=${format(departDate, "DDMMYYHHmm")}` +
         (isOneWay ? `` : `&returndate=${format(returnDate, "DDMMYYHHmm")}`) +
-        (((navValue === "flights") || (navValue === "trains")) ? `&cabinclass=${cabinClass}` : ``);
+        (((navValue === "flights") || (navValue === "trains")) ? `&cabinclass=${cabinClass}` : ``) +
+        ((navValue === "buses") ? `&city=${city}` : ``);
 
       redirect = <Redirect to={`/trips/${navValue}/${source}/${destination}` + query}/>; 
 
@@ -247,7 +321,7 @@ class SearchForm extends Component {
               onChange={this.handleNavChange}
               showLabels
             >
-            {["flights", "trains", "buses"].map((type, i) => {
+            {["flights", "trains", "buses", "carpools"].map((type, i) => {
               return (
                 <BottomNavigationAction
                   classes={{
@@ -346,7 +420,25 @@ class SearchForm extends Component {
             </FormControl>
           </Grid>
           }
-          <Grid item xs={variant === "sidebar" ? 10 : 6}>
+          {(navValue === "buses") &&
+          <Grid item xs={6} sm={variant === "sidebar" ? 12 : 6}>
+            <PlaceInput
+              id="city"
+              label="City"
+              suggestions={suggestions}
+              onChange={this.handlePlaceChange("city")}
+              value={city}
+              fullWidth
+              error={errors["city"]}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+          </Grid>
+          }
+          <Grid item xs={variant === "sidebar" ||
+            (navValue === "carpools") ? 10 : 6} md={6}
+          >
             <Button
               type="submit"
               color="secondary"

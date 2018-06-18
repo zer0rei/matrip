@@ -13,6 +13,7 @@ import MenuItem from "@material-ui/core/MenuItem";
 import Tooltip from "@material-ui/core/Tooltip";
 import DateFnsUtils from "material-ui-pickers/utils/date-fns-utils";
 import { subYears, isBefore } from "date-fns"
+import axios from "axios";
 import MuiPickersUtilsProvider from "material-ui-pickers/utils/MuiPickersUtilsProvider";
 import DatePicker from "material-ui-pickers/DatePicker";
 import {
@@ -21,6 +22,7 @@ import {
   validateEmail,
   validatePassword
 } from "../helpers";
+import { BACKEND_API } from "../config";
 
 const styles = {
   signupButton: {
@@ -35,10 +37,7 @@ function validate(value, type) {
     case "lastName":
       return validateName(value);
     case "phoneNumber":
-      if (value)
-        return validatePhoneNumber(value);
-      else
-        return true;
+      return validatePhoneNumber(value);
     case "email":
       return validateEmail(value);
     case "password":
@@ -88,10 +87,25 @@ class Login extends Component {
   }
 
   handleSexChange = event => {
-    this.setState({ sex: event.target.value });
+    let newState = Object.assign({}, this.state);
+    newState.errors["sex"] = false;
+    newState.sex = event.target.value;
+    this.setState(newState);
   }
 
   validateSignup = () => {
+    const {
+      firstName,
+      lastName,
+      email,
+      phoneNumber,
+      password,
+      confirmPassword,
+      birthdate,
+      sex,
+      errors
+    } = this.state;
+
     let newState = Object.assign({}, this.state);
     let isValid = true;
 
@@ -103,19 +117,51 @@ class Login extends Component {
         newState.errors[type] = false;
     });
 
-    if (this.state.password !== this.state.confirmPassword) {
+    if (password !== confirmPassword) {
       newState.errors["confirmPassword"] = true;
       isValid = false;
     } else
       newState.errors["confirmPassword"] = false;
 
+    if (sex === "") {
+      newState.errors["sex"] = true;
+      isValid = false;
+    }
+
     this.setState(newState);
 
     if (isValid) {
-      // TODO: request
-      this.props.onLoggedIn({});
+      axios({
+        method: 'post',
+        url: `${BACKEND_API}/TRANSPORTS_APP/controller/inscription.php`,
+        data: {
+          nom: lastName,
+          prenom: firstName,
+          telephone: phoneNumber,
+          sexe: sex,
+          email: email,
+          password: password
+        }
+      })
+      .then((response) => {
+        if (response.data.status === true) {
+          this.props.onLoggedIn({
+            id: response.data.id,
+            lastName: response.data.nom,
+            firstName: response.data.prenom,
+            phoneNumber: response.data.telephone,
+            sex: response.data.sexe,
+            email: response.data.email,
+            password: response.data.password,
+          });
+        } else {
+          console.log(response.data.message);
+        }
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
     }
-
   }
 
   render() {
@@ -193,6 +239,7 @@ class Login extends Component {
               onChange={this.handleChange("phoneNumber")}
               error={errors["phoneNumber"]}
               fullWidth
+              required
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -242,7 +289,7 @@ class Login extends Component {
             </Tooltip>
           </Grid>
           <Grid item xs={6}>
-            <FormControl fullWidth >
+            <FormControl fullWidth required error={errors["sex"]}>
               <InputLabel htmlFor="sex">Sex</InputLabel>
               <Select
                 value={sex}

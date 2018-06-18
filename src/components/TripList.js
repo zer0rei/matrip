@@ -14,7 +14,7 @@ class TripList extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      favorites: []
+      isFavoriteList: []
     }
   }
 
@@ -22,7 +22,7 @@ class TripList extends Component {
     let newState = Object.assign({}, this.state);
     this.props.trips.forEach((trip, i) => {
       if (this.props.isLoggedIn) {
-        newState.favorites[i] = false;
+        newState.isFavoriteList[i] = false;
       }
     });
     this.setState(newState);
@@ -30,21 +30,21 @@ class TripList extends Component {
 
   handleFavoriteChange = key => () => {
     let newState = Object.assign({}, this.state);
-    const prevFav = this.state.favorites[key];
-    newState.favorites[key] = prevFav ? false : true;
+    const prevFav = this.state.isFavoriteList[key];
+    newState.isFavoriteList[key] = prevFav ? false : true;
     this.setState(newState); 
   }
 
   render() {
     const { classes, trips, type } = this.props;
-    const { favorites } = this.state;
+    const { isFavoriteList } = this.state;
     const triplist = trips.map((trip, i) => {
       return (
         <TripCard
           trip={trip}
           type={type}
           key={i}
-          favorite={favorites[i]}
+          favorite={isFavoriteList[i]}
           onFavoriteChange={this.handleFavoriteChange(i)}
         />  
       )
@@ -61,7 +61,7 @@ TripList.propTypes = {
   classes: PropTypes.object.isRequired,
   trips: PropTypes.array.isRequired,
   type: PropTypes.string.isRequired,
-  isLoggedIn: PropTypes.bool.isRequired,
+  isLoggedIn: PropTypes.bool,
 };
 
 export default withStyles(styles)(TripList);

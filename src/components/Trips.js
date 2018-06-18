@@ -9,13 +9,16 @@ import Hidden from "@material-ui/core/Hidden";
 import withWidth from "@material-ui/core/withWidth";
 import Drawer from "@material-ui/core/Drawer";
 import queryString from "query-string";
+import { format } from "date-fns";
+import axios from "axios";
 import SearchForm from "./SearchForm";
 import darkTheme from "../themes/dark";
 import Page404 from "./Page404";
 import TripList from "./TripList";
 import { toISO } from "../helpers";
+import { BACKEND_API } from "../config";
 
-const drawerWidth = 350;
+const drawerWidth = 380;
 
 const styles = theme => ({
   root: {
@@ -42,6 +45,146 @@ const styles = theme => ({
     padding: "10%"
   }
 });
+
+function getFlights(request, callback) {
+   axios({
+    method: 'post',
+    url: `${BACKEND_API}/TRANSPORTS_APP/controller/flights.php`,
+    data: {
+      src: request.source,
+      dst: request.destination,
+      departDate: format(request.departDate, "YYYY-MM-DD"),
+      returnDate: request.isOneWay ?
+        "" : format(request.returnDate, "YYYY-MM-DD"),
+    }
+  })
+  .then((response) => {
+    callback(request, response.data);
+  })
+  .catch((error) => {
+    callback(request, []);
+    console.log(error);
+  });
+}
+
+function getTrains(request, callback) {
+  let dep = () => {
+    return axios({
+      method: 'post',
+      url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterTrain.php`,
+      data: {
+        gareDepart: request.source,
+        gareDestination: request.destination,
+        heureDepart: format(request.departDate, "HH:mm:ss"),
+      }
+    });
+  };
+
+  let ret = () => {
+    return request.isOneWay ? null : axios({
+      method: 'post',
+      url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterTrain.php`,
+      data: {
+        gareDepart: request.destination,
+        gareDestination: request.source,
+        heureDepart: format(request.returnDate, "HH:mm:ss"),
+      }
+    });
+  };
+
+  axios.all([dep(), ret()])
+  .then(axios.spread(function (depResponse, retResponse) {
+    if (request.isOneWay)
+      callback(request, depResponse.data);
+    else
+      callback(request, depResponse.data, retResponse.data);
+  }))
+  .catch((error) => {
+    callback(request, []);
+    console.log(error);
+  });
+}
+
+function getBuses(request, callback) {
+  let dep = () => {
+    return axios({
+      method: 'post',
+      url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterBus.php`,
+      data: {
+        from: request.source,
+        to: request.destination,
+        ville: request.city
+      }
+    });
+  };
+
+  let ret = () => {
+    return axios({
+      method: 'post',
+      url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterBus.php`,
+      data: {
+        from: request.destination,
+        to: request.source,
+        ville: request.city
+      }
+    });
+  };
+
+  axios.all([dep(), ret()])
+  .then(axios.spread(function (depResponse, retResponse) {
+    if (depResponse.data.status === true && retResponse.data.status === true) {
+      if (request.isOneWay)
+        callback(request, depResponse.data);
+      else
+        callback(request, depResponse.data, retResponse.data);
+    } else {
+      console.log(depResponse.data.message);
+      console.log(retResponse.data.message);
+    }
+  }))
+  .catch((error) => {
+    callback(request, []);
+    console.log(error);
+  });
+}
+
+function getCarpools(request, callback) {
+  let dep = () => {
+    return axios({
+      method: 'post',
+      url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterCovoit.php`,
+      data: {
+        ville_depart: request.source,
+        ville_destination: request.destination,
+        date_voyage: format(request.departDate, "YYYY-MM-DD"),
+      }
+    });
+  };
+
+  let ret = () => {
+    return request.isOneWay ? null : axios({
+      method: 'post',
+      url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterCovoit.php`,
+      data: {
+        ville_depart: request.destination,
+        ville_destination: request.source,
+        date_voyage: format(request.returnDate, "YYYY-MM-DD"),
+      }
+    });
+  };
+
+  axios.all([dep(), ret()])
+  .then(axios.spread(function (depResponse, retResponse) {
+    if (request.isOneWay)
+      callback(request, depResponse.data);
+    else
+      callback(request, depResponse.data, retResponse.data);
+  }))
+  .catch((error) => {
+    callback(request, []);
+    console.log(error);
+  });
+}
 
 class Trips extends Component {
   constructor(props) {
@@ -71,47 +214,109 @@ class Trips extends Component {
 
   componentDidMount() {
     const request = this.getRequestFromUrl();
-    // TODO: request
-    const response = [{
-      source: "RAK",
-      destination: "ORY",
-      departDate: new Date("2018-06-18T03:00:00"),
-      arrivalDate: new Date("2018-06-18T06:30:00"),
-      price: 1185.0,
-      direct: false,
-      carrier: "Royal Air Maroc",
-    },
-    {
-      source: "RAK",
-      destination: "ORY",
-      departDate: new Date("2018-06-18T02:30:00"),
-      returnDate: new Date("2018-09-18T06:30:00"),
-      price: 1463.0,
-      direct: true,
-      returnDirect: false,
-      carrier: "transavia",
-      returnCarrier: "Tuifly.be"
-    },
-    {
-      source: "RAK",
-      destination: "ORY",
-      departDate: new Date("2018-06-18T06:30:00"),
-      arrivalDate: new Date("2018-06-18T09:30:00"),
-      price: 995.0,
-      direct: true,
-      carrier: "Iberia"
-    },
-    {
-      source: "RAK",
-      destination: "ORY",
-      departDate: new Date("2018-06-18T16:30:00"),
-      arrivalDate: new Date("2018-06-18T19:20:00"),
-      price: 1995.0,
-      direct: true,
-      carrier: "Royal Air Maroc"
+    const { navValue } = request;
+
+    if (navValue === "flights") {
+      getFlights(request, this.getFlightsCallback);
+    } else if (navValue === "trains") {
+      getTrains(request, this.getTrainsCallback);
+    } else if (navValue === "buses") {
+      getBuses(request, this.getBusesCallback);
+    } else if (navValue === "carpools") {
+      getCarpools(request, this.getCarpoolsCallback);
     }
-    ];
-    this.setState({ request, response });
+  }
+
+  getFlightsCallback = (request, response) => {
+  }
+
+  getTrainsCallback = (request, response, response2=undefined) => {
+    let trips1 = response.map(trip => {
+      return {
+        id: trip.id,
+        source: trip.gareDepart,
+        destination: trip.gareDestination,
+        departDate: new Date(format(request.departDate,
+          "YYYY-MM-DDT") + trip.heureDepart),
+        arrivalDate: new Date(format(request.departDate,
+          "YYYY-MM-DDT") + trip.heureArrivee),
+        price: request.numTravellers * (request.cabinClass === 0 ?
+          trip.prix_deuxieme : trip.prix_premier),
+        direct: trip.correspondance === "directe",
+        carrier: "ONCF",
+      }
+    });
+
+    if (request.isOneWay || response2 === undefined)
+      return trips1;
+
+    let trips2 = response2.map(trip => {
+      return {
+        returnDate: new Date(format(request.returnDate,
+          "YYYY-MM-DDT") + trip.heureDepart),
+        returnArrivalDate: new Date(format(request.returnDate,
+          "YYYY-MM-DDT") + response.heureArrivee),
+        returnDirect: trip.correspondance === "directe",
+        returnPrice: request.numTravellers * (request.cabinClass === 0 ?
+          trip.prix_deuxieme : trip.prix_premier),
+        returnCarrier: "ONCF"
+      }
+    });
+
+    let trips = []; 
+    trips1.forEach(trip1 => {
+      trips2.forEach(trip2 => {
+        trips.push(Object.assign(trip1, trip2)); 
+      })
+    });
+
+    this.setState({ response: trips });
+  }
+
+  getBusesCallback = (request, response, response2=undefined) => {
+  }
+
+  getCarpoolsCallback = (request, response, response2=undefined) => {
+    let res = response.filter(r => {
+      return request.numTravellers < parseInt(r.nb_places_proposes, 10);
+    });
+
+    let res2 = response2.filter(r => {
+      return request.numTravellers < parseInt(r.nb_places_proposes, 10);
+    });
+
+    let trips1 = res.map(trip => {
+      return {
+        id: trip.id_covoit,
+        source: trip.ville_depart,
+        destination: trip.ville_destination,
+        departDate: new Date(trip.date_voyage + "T" + trip.heure_voyage),
+        price: request.numTravellers * trip.prix,
+        carrier: trip.proposer.prenom + " " + trip.proposer.nom,
+        direct: true,
+      }
+    });
+
+    if (request.isOneWay || response2 === undefined)
+      return trips1;
+
+    let trips2 = res2.map(trip => {
+      return {
+        returnDate: new Date(trip.date_voyage + "T" + trip.heure_voyage),
+        returnDirect: true,
+        returnCarrier: trip.proposer.prenom + " " + trip.proposer.nom,
+        returnPrice: request.numTravellers * trip.prix,
+      }
+    });
+
+    let trips = []; 
+    trips1.forEach(trip1 => {
+      trips2.forEach(trip2 => {
+        trips.push(Object.assign(trip1, trip2)); 
+      })
+    });
+
+    this.setState({ response: trips });
   }
 
   render() {

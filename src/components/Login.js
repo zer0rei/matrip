@@ -6,7 +6,9 @@ import Grid from "@material-ui/core/Grid";
 import Typography from "@material-ui/core/Typography";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
+import axios from "axios";
 import { validateEmail, validatePassword } from "../helpers"
+import { BACKEND_API } from "../config";
 
 const styles = {
   loginButton: {
@@ -45,24 +47,50 @@ class Login extends Component {
   }
 
   handleLogin = () => {
+    const { email, password } = this.state;
+
     let newState = Object.assign({}, this.state);
     let isValid = true;
 
-    if (!validateEmail(this.state.email)) {
+    if (!validateEmail(email)) {
       newState.errors["email"] = true;
       isValid = false;
     } else
       newState.errors["email"] = false;
 
-    if (!validatePassword(this.state.password)) {
+    if (!validatePassword(password)) {
       newState.errors["password"] = true;
       isValid = false;
     } else
       newState.errors["password"] = false;
 
     if (isValid) {
-      // TODO: request
-      this.props.onLoggedIn({});
+      axios({
+        method: 'post',
+        url: `${BACKEND_API}/TRANSPORTS_APP/controller/login.php`,
+        data: {
+          email: email,
+          password: password
+        }
+      })
+      .then((response) => {
+        if (response.data.status === true) {
+          this.props.onLoggedIn({
+            id: response.data.id,
+            lastName: response.data.nom,
+            firstName: response.data.prenom,
+            phoneNumber: response.data.telephone,
+            sex: response.data.sexe,
+            email: response.data.email,
+            password: response.data.password,
+          });
+        } else {
+          console.log(response.data.message);
+        }
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
     }
 
     this.setState(newState);

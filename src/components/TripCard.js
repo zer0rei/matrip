@@ -16,11 +16,16 @@ const styles = theme => ({
   root: {
     flexGrow: 1,
     width: "100%",
-    padding: 32
+    paddingTop: 16,
+    [theme.breakpoints.up("md")]: {
+      padding: 32
+    }
   },
   infoContainer: {
-    paddingLeft: 48,
-    paddingRight: 48
+    [theme.breakpoints.up("md")]: {
+      paddingLeft: 48,
+      paddingRight: 48
+    }
   },
   arrowIcon: {
     fontSize: 64,
@@ -28,7 +33,10 @@ const styles = theme => ({
   },
   place: {
     fontWeight: "bold",
-    color: theme.palette.primary.main
+    color: theme.palette.primary.main,
+    [theme.breakpoints.down("xs")]: {
+      fontSize: 16,
+    }
   },
   price: {
     fontWeight: "bold",
@@ -38,19 +46,36 @@ const styles = theme => ({
     fontWeight: "normal",
     fontSize: "0.7em"
   },
+  carrierContainer: {
+    margin: 0,
+    paddingBottom: 8
+  },
+  lineContainer: {
+    margin: 0,
+    padding: 0
+  },
+  line: {
+    borderStyle: "solid",
+    borderWidth: 3,
+    borderRadius: 256,
+    fontWeight: "bold",
+    width: 36
+  },
   favoriteContainer: {
     width: "100%",
     height: 8
   },
   favorite: {
     position: "absolute",
-    right: 32
+    [theme.breakpoints.up("md")]: {
+      right: 32
+    }
   }
 });
 
 const TripCard = props => {
   const { classes, trip, type, key, favorite, onFavoriteChange } = props;
-  const renderTrip = (src, dst, dptDate, arrvDate, direct, link, carrier) => {
+  const renderTrip = (src, dst, dptDate, arrvDate, direct, price, link, carrier, line) => {
     return (
       <Grid
         container
@@ -156,7 +181,7 @@ const TripCard = props => {
                 align="center"
                 className={classes.price}
               >
-                {trip.price} <span className={classes.currency}>MAD</span>
+                {price} <span className={classes.currency}>MAD</span>
               </Typography>
             </CardContent>
             <CardActions>
@@ -169,15 +194,27 @@ const TripCard = props => {
                 Select
               </Button>
             </CardActions>
-            <CardContent>
+            <CardContent className={classes.carrierContainer}>
               <Typography
-                align="right"  
+                align="center"  
                 variant="subheading"
                 color="textSecondary"
               >
                 {carrier}
               </Typography>
             </CardContent>
+            {line !== undefined &&
+            <CardContent className={classes.lineContainer}>
+              <Typography
+                align="center"  
+                variant="headline"
+                color="primary"
+                className={classes.line}
+              >
+                {line}
+              </Typography>
+            </CardContent>
+            }
           </Grid>
         </Grid>
       </Grid>
@@ -205,8 +242,10 @@ const TripCard = props => {
         trip.departDate,
         trip.arrivalDate,
         trip.direct,
+        trip.price,
         trip.link,
-        trip.carrier
+        trip.carrier,
+        trip.line
       )}
       {trip.returnDate && renderTrip(
         trip.destination,
@@ -214,8 +253,10 @@ const TripCard = props => {
         trip.returnDate,
         trip.returnArrivalDate,
         trip.returnDirect,
+        trip.returnPrice,
         trip.returnLink,
-        trip.returnCarrier
+        trip.returnCarrier,
+        trip.returnLine
       )}
     </Card>
   );

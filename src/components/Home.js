@@ -26,7 +26,7 @@ const styles = theme => ({
     backgroundPosition: "center",
     position: "absolute",
     top: 0,
-    zIndex: -1
+    zIndex: 0
   },
   container: {
     backgroundColor: blueGrayTransparent,
@@ -68,7 +68,7 @@ class Home extends Component {
           direction="row"
           justify="center"
         >
-          <Grid item xs={11} md={5}>
+          <Grid item xs={12} md={5}>
             <Paper className={classes.container}>
               {this.renderSwitch(show)}
             </Paper>
