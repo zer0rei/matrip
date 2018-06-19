@@ -13,8 +13,6 @@ import MenuItem from "@material-ui/core/MenuItem";
 import Tooltip from "@material-ui/core/Tooltip";
 import DateFnsUtils from "material-ui-pickers/utils/date-fns-utils";
 import { subYears, isBefore } from "date-fns"
-import axios from "axios";
-import qs from "qs";
 import MuiPickersUtilsProvider from "material-ui-pickers/utils/MuiPickersUtilsProvider";
 import DatePicker from "material-ui-pickers/DatePicker";
 import {
@@ -23,7 +21,7 @@ import {
   validateEmail,
   validatePassword
 } from "../helpers";
-import { BACKEND_API } from "../config";
+import signup from "../api/signup";
 
 const styles = {
   signupButton: {
@@ -129,37 +127,28 @@ class Login extends Component {
     }
 
     if (isValid) {
-      axios({
-        method: 'post',
-        url: `${BACKEND_API}/TRANSPORTS_APP/controller/inscription.php`,
-        data: qs.stringify({
-          nom: lastName,
-          prenom: firstName,
-          telephone: phoneNumber,
-          sexe: sex,
-          email: email,
-          password: password
-        })
-      })
-      .then((response) => {
-        if (response.data.status === true) {
-        console.log(response.data);
-          this.props.onLoggedIn({
-            id: response.data.id,
-            lastName: response.data.nom,
-            firstName: response.data.prenom,
-            phoneNumber: response.data.telephone,
-            sex: response.data.sexe,
-            email: response.data.email,
-            password: response.data.password,
-          });
-        } else {
-          console.log(response.data.message);
-        }
-      })
-      .catch(function (error) {
-        console.log(error);
+      const instance = signup({
+        lastName,
+        firstName,
+        phoneNumber,
+        sex,
+        email,
+        password
       });
+
+      if (instance) {
+        instance.then((response) => {
+          if (typeof response === 'object' && response !== null) {
+            this.props.onLoggedIn(response);
+          }
+          if (response === "email exists") {
+            newErrors["email"] = true;
+            this.setState({ errors: newErrors });
+          }
+        }).catch(function (error) {
+          console.log(error);
+        });
+      }
     }
 
     this.setState({ errors: newErrors });

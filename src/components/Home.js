@@ -26,7 +26,8 @@ const styles = theme => ({
     backgroundPosition: "center",
     position: "absolute",
     top: 0,
-    zIndex: 0
+    zIndex: 0,
+    overflow: "hidden"
   },
   container: {
     backgroundColor: blueGrayTransparent,

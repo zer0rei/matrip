@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { withStyles } from "@material-ui/core/styles";
+import withWidth from '@material-ui/core/withWidth';
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
 import Card from "@material-ui/core/Card";
@@ -21,34 +22,56 @@ const styles = theme => ({
       padding: 32
     }
   },
-  infoContainer: {
-    [theme.breakpoints.up("md")]: {
-      paddingLeft: 48,
-      paddingRight: 48
+  direct: {
+    [theme.breakpoints.down("xs")]: {
+      fontSize: 12,
     }
   },
   arrowIcon: {
     fontSize: 64,
-    color: theme.palette.primary.light
+    color: theme.palette.primary.light,
+    [theme.breakpoints.down("xs")]: {
+      fontSize: 48,
+    }
+  },
+  duration: {
+    [theme.breakpoints.down("xs")]: {
+      fontSize: 12,
+    }
   },
   place: {
     fontWeight: "bold",
     color: theme.palette.primary.main,
     [theme.breakpoints.down("xs")]: {
-      fontSize: 16,
+      fontSize: 12,
+    }
+  },
+  card: {
+    [theme.breakpoints.down("xs")]: {
+      padding: 0,
+      margin: 8,
     }
   },
   price: {
     fontWeight: "bold",
-    color: theme.palette.primary.dark
+    color: theme.palette.primary.dark,
+    [theme.breakpoints.down("xs")]: {
+      fontSize: 16,
+    }
   },
   currency: {
     fontWeight: "normal",
-    fontSize: "0.7em"
+    fontSize: "0.8em"
   },
-  carrierContainer: {
-    margin: 0,
-    paddingBottom: 8
+  selectButton: {
+    [theme.breakpoints.down("xs")]: {
+      fontSize: 12,
+    }
+  },
+  carrier: {
+    [theme.breakpoints.down("xs")]: {
+      fontSize: 12,
+    }
   },
   lineContainer: {
     margin: 0,
@@ -57,9 +80,17 @@ const styles = theme => ({
   line: {
     borderStyle: "solid",
     borderWidth: 3,
-    borderRadius: 256,
+    borderRadius: "50%",
     fontWeight: "bold",
-    width: 36
+    width: 38,
+    height: 38,
+    [theme.breakpoints.down("xs")]: {
+      width: 22,
+      height: 22,
+      borderWidth: 2,
+      borderRadius: "50%",
+      fontSize: 14,
+    }
   },
   favoriteContainer: {
     width: "100%",
@@ -74,13 +105,13 @@ const styles = theme => ({
 });
 
 const TripCard = props => {
-  const { classes, trip, type, key, favorite, onFavoriteChange } = props;
+  const { classes, width, trip, type, key, favorite, onFavoriteChange } = props;
   const renderTrip = (src, dst, dptDate, arrvDate, direct, price, link, carrier, line) => {
     return (
       <Grid
         container
-        spacing={8}
         alignItems="center"
+        spacing={8}
         direction="row"
         justify="center"
       >
@@ -92,7 +123,7 @@ const TripCard = props => {
             justify="center"
             className={classes.infoContainer}
           >
-            <Grid item xs={4}>
+            <Grid item xs={5} lg={4}>
               <CardContent>
                 <Typography
                   className={classes.place}
@@ -110,7 +141,7 @@ const TripCard = props => {
                 </Typography>
               </CardContent>
             </Grid>
-            <Grid item xs={4}>
+            <Grid item xs={2} lg={4}>
               <Grid
                 container
                 alignItems="center"
@@ -123,6 +154,7 @@ const TripCard = props => {
                     align="center"
                     variant="subheading"
                     color="secondary"
+                    className={classes.direct}
                   >
                     {direct ?
                       <span style={{color: "green"}}>
@@ -138,6 +170,7 @@ const TripCard = props => {
                     align="center"
                     variant="subheading"
                     color="textSecondary"
+                    className={classes.duration}
                   >
                     {arrvDate ?
                       formatDistanceStrict(dptDate, arrvDate) :
@@ -146,7 +179,7 @@ const TripCard = props => {
                 </CardContent>
               </Grid>
             </Grid>
-            <Grid item xs={4}>
+            <Grid item xs={5} lg={4}>
               <CardContent>
                 <Typography
                   className={classes.place}
@@ -168,37 +201,42 @@ const TripCard = props => {
             </Grid>
           </Grid>
         </Grid>
-        <Grid item xs={4}>
+        <Grid item xs={3}>
           <Grid
             container
             alignItems="center"
             direction="column"
             justify="center"
           >
-            <CardContent>
+            <CardContent className={classes.card}>
               <Typography
                 variant="title"
                 align="center"
                 className={classes.price}
               >
-                {price} <span className={classes.currency}>MAD</span>
+                {price} <span className={classes.currency}>
+                  {price !== undefined ? "DH" : ""}
+                </span>
               </Typography>
             </CardContent>
-            <CardActions>
+            <CardActions className={classes.card}>
               <Button
                 variant="contained"
                 color="secondary"
+                size={width === "xs" ? "small" : "medium"}
                 href={link}
                 disabled={link === undefined}
+                className={classes.selectButton}
               >
                 Select
               </Button>
             </CardActions>
-            <CardContent className={classes.carrierContainer}>
+            <CardContent className={classes.card}>
               <Typography
                 align="center"  
                 variant="subheading"
                 color="textSecondary"
+                className={classes.carrier}
               >
                 {carrier}
               </Typography>
@@ -270,4 +308,4 @@ TripCard.propTypes = {
   onFavoriteChange: PropTypes.func,
 };
 
-export default withStyles(styles)(TripCard);
+export default withWidth()(withStyles(styles)(TripCard));

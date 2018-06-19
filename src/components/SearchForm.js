@@ -18,72 +18,8 @@ import { addMinutes, addDays, isAfter, format } from "date-fns"
 import MuiPickersUtilsProvider from "material-ui-pickers/utils/MuiPickersUtilsProvider";
 import DatePicker from "material-ui-pickers/DatePicker";
 import DateTimePicker from "material-ui-pickers/DateTimePicker";
-import axios from "axios";
-import qs from "qs";
 import PlaceInput from "./PlaceInput";
-import { BACKEND_API } from "../config";
-
-function getPlaceSuggestions(query, type, callback) {
-  if (type === "flights") {
-    axios({
-      method: 'post',
-      url: `${BACKEND_API}/TRANSPORTS_APP/controller/suggestions.php`,
-      data: qs.stringify({query: query}),
-    })
-    .then((response) => {
-      let places = JSON.parse(response.data).Places.map(place => {
-        return {
-          nom: place.PlaceId.split("-")[0]
-        }
-      });
-      callback(places);
-    })
-    .catch((error) => {
-      callback([]);
-      console.log(error);
-    });
-  } else if (type === "trains") { 
-    axios({
-      method: 'get',
-      url: `${BACKEND_API}/TRANSPORTS_APP/controller/gares.php`,
-    })
-    .then((response) => {
-      callback(response.data);
-    })
-    .catch((error) => {
-      callback([]);
-      console.log(error);
-    });
-  } else if (type === "buses") {
-    axios({
-      method: 'get',
-      url: `${BACKEND_API}/TRANSPORTS_APP/controller/stations.php`,
-    })
-    .then((response) => {
-      callback(response.data);
-    })
-    .catch((error) => {
-      callback([]);
-      console.log(error);
-    });
-  } else if (type === "carpools") {
-    getCitySuggestions(callback);
-  }
-}
-
-function getCitySuggestions(callback) {
-  axios({
-    method: 'get',
-    url: `${BACKEND_API}/TRANSPORTS_APP/controller/villes.php`,
-  })
-  .then((response) => {
-    callback(response.data);
-  })
-  .catch((error) => {
-    callback([]);
-    console.log(error);
-  });
-}
+import getSuggestions from "../api/suggestions";
 
 const styles = theme => ({
   nav: {
@@ -144,13 +80,6 @@ class SearchForm extends Component {
     };
   }
 
-  suggestionsCallback = (response) => {
-    let suggestions = response.map((s) => {
-      return {label: s.nom};
-    });
-    this.setState({ suggestions });
-  }
-
   handleNavChange = (event, navValue) => {
     this.setState({ navValue, isRequestValid: false });
     if (navValue === "flights") {
@@ -172,17 +101,18 @@ class SearchForm extends Component {
       }
     }
 
-    if (type === "city") {
-      getCitySuggestions(this.suggestionsCallback);
-    } else {
-      getPlaceSuggestions(
-        value,
-        this.state.navValue,
-        this.suggestionsCallback
-      );
-    }
-
     this.setState({[type]: value, errors: newErrors});
+
+    const suggType = (type === "city") ? "cities" : this.state.navValue;
+    const instance = getSuggestions(suggType, value);
+    if (instance !== null) {
+      instance.then((suggestions) => {
+        this.setState({ suggestions });
+      }).catch(e => {
+        this.setState({ suggestions: [] });
+        console.log(e); 
+      });
+    }
   }
 
   handleCabinClassChange = event => {
@@ -306,8 +236,9 @@ class SearchForm extends Component {
 
       redirect = <Redirect to={`/trips/${navValue}/${source}/${destination}` + query}/>; 
 
-      if (variant !== 'sidebar')
+      if (variant !== 'sidebar') {
         return redirect;
+      }
     }
     return (
       <MuiPickersUtilsProvider utils={DateFnsUtils}>

@@ -8,16 +8,15 @@ import {
 import Hidden from "@material-ui/core/Hidden";
 import withWidth from "@material-ui/core/withWidth";
 import Drawer from "@material-ui/core/Drawer";
+import CircularProgress from '@material-ui/core/CircularProgress';
 import queryString from "query-string";
 import { format } from "date-fns";
-import axios from "axios";
-import qs from "qs";
 import SearchForm from "./SearchForm";
 import darkTheme from "../themes/dark";
 import Page404 from "./Page404";
 import TripList from "./TripList";
 import { toISO } from "../helpers";
-import { BACKEND_API } from "../config";
+import getTrips from "../api/trips";
 
 const drawerWidth = 380;
 
@@ -44,157 +43,56 @@ const styles = theme => ({
   notFoundContainer: {
     marginTop: "10%",
     padding: "10%"
+  },
+  tripsProgress: {
+    display: "block",
+    marginTop: "20%",
+    margin: "auto",
   }
 });
-
-function getFlights(request, callback) {
-   axios({
-    method: 'post',
-    url: `${BACKEND_API}/TRANSPORTS_APP/controller/flights.php`,
-    data: qs.stringify({
-      src: request.source,
-      dst: request.destination,
-      departDate: format(request.departDate, "YYYY-MM-DD"),
-      returnDate: request.isOneWay ?
-        "" : format(request.returnDate, "YYYY-MM-DD"),
-    })
-  })
-  .then((response) => {
-    callback(request, JSON.parse(response.data));
-  })
-  .catch((error) => {
-    callback(request, {});
-    console.log(error);
-  });
-}
-
-function getTrains(request, callback) {
-  let dep = () => {
-    return axios({
-      method: 'post',
-      url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterTrain.php`,
-      data: qs.stringify({
-        gareDepart: request.source,
-        gareDestination: request.destination,
-        heureDepart: format(request.departDate, "HH:mm:ss"),
-      })
-    });
-  };
-
-  let ret = () => {
-    return request.isOneWay ? null : axios({
-      method: 'post',
-      url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterTrain.php`,
-      data: qs.stringify({
-        gareDepart: request.destination,
-        gareDestination: request.source,
-        heureDepart: format(request.returnDate, "HH:mm:ss"),
-      })
-    });
-  };
-
-  axios.all([dep(), ret()])
-  .then(axios.spread(function (depResponse, retResponse) {
-    if (request.isOneWay) {
-      callback(request, depResponse.data);
-    } else {
-      callback(request, depResponse.data, retResponse.data);
-    }
-  }))
-  .catch((error) => {
-    callback(request, []);
-    console.log(error);
-  });
-}
-
-function getBuses(request, callback) {
-  let dep = () => {
-    return axios({
-      method: 'post',
-      url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterBus.php`,
-      data: qs.stringify({
-        from: request.source,
-        to: request.destination,
-        ville: request.city
-      })
-    });
-  };
-
-  let ret = () => {
-    return axios({
-      method: 'post',
-      url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterBus.php`,
-      data: qs.stringify({
-        from: request.destination,
-        to: request.source,
-        ville: request.city
-      })
-    });
-  };
-
-  axios.all([dep(), ret()])
-  .then(axios.spread(function (depResponse, retResponse) {
-    if (depResponse.data.status === true && retResponse.data.status === true) {
-      if (request.isOneWay)
-        callback(request, depResponse.data);
-      else
-        callback(request, depResponse.data, retResponse.data);
-    } else {
-      console.log(depResponse.data.message);
-      console.log(retResponse.data.message);
-    }
-  }))
-  .catch((error) => {
-    callback(request, []);
-    console.log(error);
-  });
-}
-
-function getCarpools(request, callback) {
-  let dep = () => {
-    return axios({
-      method: 'post',
-      url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterCovoit.php`,
-      data: qs.stringify({
-        ville_depart: request.source,
-        ville_destination: request.destination,
-        //date_voyage: format(request.departDate, "YYYY-MM-DD"),
-      })
-    });
-  };
-
-  let ret = () => {
-    return request.isOneWay ? null : axios({
-      method: 'post',
-      url: `${BACKEND_API}/TRANSPORTS_APP/controller/consulterCovoit.php`,
-      data: qs.stringify({
-        ville_depart: request.destination,
-        ville_destination: request.source,
-        //date_voyage: format(request.returnDate, "YYYY-MM-DD"),
-      })
-    });
-  };
-
-  axios.all([dep(), ret()])
-  .then(axios.spread(function (depResponse, retResponse) {
-    if (request.isOneWay) {
-      callback(request, depResponse.data);
-    } else {
-      callback(request, depResponse.data, retResponse.data);
-    }
-  }))
-  .catch((error) => {
-    callback(request, []);
-    console.log(error);
-  });
-}
 
 class Trips extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      loading: true,
       request: {},
       response: []
+    }
+  }
+
+  componentDidMount() {
+    const inReq = this.getRequestFromUrl();
+    const { navValue } = inReq;
+    const instance = getTrips(inReq, navValue);
+    if (instance !== null) {
+      instance.then((response) => {
+        this.setState({ response, loading: false });
+      }).catch(e => {
+        this.setState({ response: [], loading: false });
+        console.log(e); 
+      });
+    }
+    this.setState({ request: inReq });
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.match !== prevProps.match ||
+      this.props.location !== prevProps.location) {
+
+      const inReq = this.getRequestFromUrl();
+      const { navValue } = inReq;
+      const instance = getTrips(inReq, navValue);
+      if (instance !== null) {
+        instance.then((response) => {
+          this.setState({ response, loading: false });
+        }).catch(e => {
+          this.setState({ response: [], loading: false });
+          console.log(e); 
+        });
+      }
+
+      this.setState({ request: inReq });
     }
   }
 
@@ -210,187 +108,33 @@ class Trips extends Component {
       isOneWay: query.isoneway === "true",
       departDate: new Date(toISO(query.departdate)),
       returnDate: query.returndate && new Date(toISO(query.returndate)),
-      cabinClass: query.cabinclass && parseInt(query.cabinclass, 10)
+      cabinClass: query.cabinclass && parseInt(query.cabinclass, 10),
+      city: query.city
     }
     return request;
   }
 
-  componentDidMount() {
-    const request = this.getRequestFromUrl();
-    const { navValue } = request;
-
-    if (navValue === "flights") {
-      getFlights(request, this.getFlightsCallback);
-    } else if (navValue === "trains") {
-      getTrains(request, this.getTrainsCallback);
-    } else if (navValue === "buses") {
-      getBuses(request, this.getBusesCallback);
-    } else if (navValue === "carpools") {
-      getCarpools(request, this.getCarpoolsCallback);
-    }
-
-    this.setState({ request });
-  }
-
-  getFlightsCallback = (request, response) => {
-    if (response === undefined || response === {} ||
-      response.Quotes === undefined || response.Quotes === [])
-      return;
-
-    let trips = response.Quotes.map(trip => {
-      let inCarr = response.Carriers.filter((carr) => {
-        return carr.CarrierId === trip.OutboundLeg.CarrierIds[0];
-      });
-
-      let res1 = {
-        id: trip.id,
-        source: request.source,
-        destination: request.destination,
-        departDate: new Date(trip.OutboundLeg.DepartureDate),
-        price: request.numTravellers * trip.MinPrice,
-        direct: trip.Direct,
-        carrier: inCarr[0].Name
-      };
-
-      if (request.isOneWay)
-        return res1;
-
-
-      let outCarr = response.Carriers.filter((carr) => {
-        return carr.CarrierId === trip.InboundLeg.CarrierIds[0];
-      });
-
-      let res2 = {
-        returnDate: new Date(trip.InboundLeg.DepartureDate),
-        returnDirect: trip.Direct,
-        returnCarrier: outCarr[0].Name
-      }
-
-      return Object.assign(res1, res2);
-    });
-
-    this.setState({ response: trips });
-  }
-
-  getTrainsCallback = (request, response, response2=undefined) => {
-    if (response === [])
-      return;
-
-    let trips1 = response.map(trip => {
-      return {
-        id: trip.id,
-        source: trip.gareDepart,
-        destination: trip.gareDestination,
-        departDate: new Date(format(request.departDate,
-          "YYYY-MM-DDT") + trip.heureDepart),
-        arrivalDate: new Date(format(request.departDate,
-          "YYYY-MM-DDT") + trip.heureArrivee),
-        price: request.numTravellers * (request.cabinClass === 0 ?
-          trip.prix_deuxieme : trip.prix_premier),
-        direct: trip.correspondance.toUpperCase() === "DIRECT",
-        carrier: "ONCF",
-      }
-    });
-
-    if (request.isOneWay || response2 === undefined) {
-      this.setState({ response: trips1 });
-      return trips1;
-    }
-
-    let trips2 = response2.map(trip => {
-      return {
-        returnDate: new Date(format(request.returnDate,
-          "YYYY-MM-DDT") + trip.heureDepart),
-        returnArrivalDate: new Date(format(request.returnDate,
-          "YYYY-MM-DDT") + response.heureArrivee),
-        returnDirect: trip.correspondance === "directe",
-        returnPrice: request.numTravellers * (request.cabinClass === 0 ?
-          trip.prix_deuxieme : trip.prix_premier),
-        returnCarrier: "ONCF"
-      }
-    });
-
-    let trips = []; 
-    trips1.forEach(trip1 => {
-      trips2.forEach(trip2 => {
-        trips.push(Object.assign(trip1, trip2)); 
-      })
-    });
-
-    this.setState({ response: trips });
-  }
-
-  getBusesCallback = (request, response, response2=undefined) => {
-  }
-
-  getCarpoolsCallback = (request, response, response2=undefined) => {
-    if (response === [])
-      return;
-
-    let res = response.filter(r => {
-      return request.numTravellers < parseInt(r.nb_places_proposes, 10);
-    });
-
-    let res2;
-    if (response2 !== undefined) {
-      res2 = response2.filter(r => {
-        return request.numTravellers < parseInt(r.nb_places_proposes, 10);
-      });
-    }
-
-    let trips1 = res.map(trip => {
-      return {
-        id: trip.id_covoit,
-        source: trip.ville_depart,
-        destination: trip.ville_destination,
-        departDate: new Date(trip.date_voyage + "T" + trip.heure_voyage),
-        price: request.numTravellers * parseInt(trip.prix),
-        carrier: trip.proposer.prenom + " " + trip.proposer.nom,
-        direct: true,
-      }
-    });
-
-    if (request.isOneWay || response2 === undefined) {
-      this.setState({ response: trips1 });
-      return;
-    }
-
-    let trips2 = res2.map(trip => {
-      return {
-        returnDate: new Date(trip.date_voyage + "T" + trip.heure_voyage),
-        returnDirect: true,
-        returnCarrier: trip.proposer.prenom + " " + trip.proposer.nom,
-        returnPrice: request.numTravellers * parseInt(trip.prix),
-      }
-    });
-
-    let trips = []; 
-    trips1.forEach(trip1 => {
-      trips2.forEach(trip2 => {
-        trips.push(Object.assign(trip1, trip2)); 
-      })
-    });
-
-    this.setState({ response: trips });
-  }
-
   render() {
     const { classes, isLoggedIn } = this.props;
-    const { request, response } = this.state;
+    const { request, response, loading } = this.state;
 
     let trips;
-    if (response === undefined || response.length === 0) {
-      trips = <div className={classes.notFoundContainer}>
-        <Page404
-          message="Sorry, we couldn't process your request, please try again"
-        />
-      </div>;
+    if (loading) {
+      trips = <CircularProgress size={128} className={classes.tripsProgress}/>;
     } else {
-      trips = <TripList
-        trips={response}
-        type={request.navValue}
-        isLoggedIn={isLoggedIn}
-      />;
+      if (response === undefined || response === null || response.length === 0) {
+        trips = <div className={classes.notFoundContainer}>
+          <Page404
+            message="Sorry, we couldn't process your request, please try again"
+          />
+        </div>;
+      } else {
+        trips = <TripList
+          trips={response}
+          type={request.navValue}
+          isLoggedIn={isLoggedIn}
+        />;
+      }
     }
     return (
       <div className={classes.root}>

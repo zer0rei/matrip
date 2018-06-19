@@ -6,10 +6,8 @@ import Grid from "@material-ui/core/Grid";
 import Typography from "@material-ui/core/Typography";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
-import axios from "axios";
-import qs from "qs";
 import { validateEmail, validatePassword } from "../helpers"
-import { BACKEND_API } from "../config";
+import login from "../api/login";
 
 const styles = {
   loginButton: {
@@ -39,7 +37,7 @@ class Login extends Component {
   handlePasswordChange = event => {
     let newErrors = Object.assign({}, this.state.errors);
 
-    if (validatePassword(event.target.value)) 
+    if (validatePassword(event.target.value))
       newErrors["password"] = false;
 
     this.setState({ password: event.target.value, errors: newErrors });
@@ -64,35 +62,26 @@ class Login extends Component {
       newErrors["password"] = false;
 
     if (isValid) {
-      axios({
-        method: 'post',
-        url: `${BACKEND_API}/TRANSPORTS_APP/controller/login.php`,
-        data: qs.stringify({
-          email: email,
-          password: password
+      const instance = login(email, password);
+
+      if (instance) {
+        instance.then((response) => {
+          if (typeof response === 'object' && response !== null) {
+            this.props.onLoggedIn(response);
+          }
+          else {
+            newErrors["email"] = true;
+            newErrors["password"] = true;
+            this.setState({ error: newErrors });
+          }
         })
-      })
-      .then((response) => {
-        if (response.data.status === true) {
-          this.props.onLoggedIn({
-            id: response.data.id,
-            lastName: response.data.nom,
-            firstName: response.data.prenom,
-            phoneNumber: response.data.telephone,
-            sex: response.data.sexe,
-            email: response.data.email,
-            password: response.data.password,
-          });
-        } else {
-          console.log(response.data.message);
-        }
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
+        .catch(function (error) {
+          console.log(error);
+        });
+      }
     }
 
-    this.setState({ error: newErrors });
+    this.setState({ errors: newErrors });
   }
 
   render() {

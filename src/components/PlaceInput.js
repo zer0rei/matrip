@@ -128,7 +128,7 @@ const PlaceInput = props => {
                 renderSuggestion({
                   suggestion,
                   index,
-                  itemProps: getItemProps({ item: suggestion.label }),
+                  itemProps: getItemProps({ item: suggestion.value }),
                   highlightedIndex,
                   selectedItem,
                 }),
