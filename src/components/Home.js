@@ -41,12 +41,12 @@ class Home extends Component {
     switch(param) {
       case "login":
         return <Login
-          onLoggedIn={this.props.onLoggedIn}
+          onUserUpdate={this.props.onUserUpdate}
           isLoggedIn={this.props.isLoggedIn}
         />;
       case "signup":
         return <Signup
-          onLoggedIn={this.props.onLoggedIn}
+          onUserUpdate={this.props.onUserUpdate}
           isLoggedIn={this.props.isLoggedIn}
         />;
       case "404":
@@ -85,7 +85,7 @@ Home.propTypes = {
   height: PropTypes.number,
   width: PropTypes.number,
   show: PropTypes.string,
-  onLoggedIn: PropTypes.func,
+  onUserUpdate: PropTypes.func,
   isLoggedIn: PropTypes.bool
 };
 

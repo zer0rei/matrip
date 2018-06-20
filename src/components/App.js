@@ -36,12 +36,12 @@ const styles = {
   }
 };
 
-const PrivateRoute = ({ isAuthenticated, component: Component, ...rest }) => (
+const PrivateRoute = ({ isAuthenticated, component: Component, componentProps, ...rest }) => (
   <Route
     {...rest}
     render={props =>
       isAuthenticated ? (
-        <Component {...props} />
+        <Component {...props} {...componentProps} />
       ) : (
         <Redirect
           to={{
@@ -92,12 +92,15 @@ class App extends Component {
   };
 
   handleLogout = () => {
-    this.setState({ isLoggedIn: false });
+    this.setState({ isLoggedIn: false, user: {} });
     this.handleClose();
   };
 
-  handleLoggedIn = (user) => {
-    this.setState({ isLoggedIn: true, user });
+  handleUserUpdate = (user) => {
+    if (user !== {})
+      this.setState({ isLoggedIn: true, user });
+    else
+      this.setState({ isLoggedIn: false, user });
   };
 
   render() {
@@ -188,7 +191,7 @@ class App extends Component {
                 render={props => (<Home {...props}
                   height={height}
                   width={width}
-                  onLoggedIn={this.handleLoggedIn}
+                  onUserUpdate={this.handleUserUpdate}
                   isLoggedIn={isLoggedIn}
                   show="login"
                 />)}
@@ -197,7 +200,7 @@ class App extends Component {
                 render={props => (<Home {...props}
                   height={height}
                   width={width}
-                  onLoggedIn={this.handleLoggedIn}
+                  onUserUpdate={this.handleUserUpdate}
                   isLoggedIn={isLoggedIn}
                   show="signup"
                 />)}
@@ -206,6 +209,7 @@ class App extends Component {
                 isAuthenticated={isLoggedIn}
                 path="/dashboard"
                 component={Dashboard}
+                componentProps={{ user, onUserUpdate: this.handleUserUpdate, isLoggedIn }}
               />
               {["flights", "trains", "buses", "carpools"].map((type, i) => {
                   return (
@@ -213,6 +217,7 @@ class App extends Component {
                       path={`/trips/${type}/:from/:to`}
                       render={props => (<Trips {...props}
                         isLoggedIn={isLoggedIn}
+                        user={user}
                       />)}
                       key={i}
                     />

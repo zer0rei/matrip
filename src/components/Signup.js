@@ -21,11 +21,15 @@ import {
   validateEmail,
   validatePassword
 } from "../helpers";
-import signup from "../api/signup";
+import { signup } from "../api/signup";
+import { modifyUser } from "../api/signup";
 
 const styles = {
   signupButton: {
     marginTop: 16
+  },
+  userModifAlert: {
+    color: "green"
   }
 };
 
@@ -49,16 +53,26 @@ function validate(value, type) {
 class Login extends Component {
   constructor(props) {
     super(props);
+    const {
+      firstName,
+      lastName,
+      email,
+      phoneNumber,
+      birthdate,
+      sex
+    } = (props.variant === "modify") ? props.user : {};
+
     this.state = {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phoneNumber: "",
+      firstName: firstName || "",
+      lastName: lastName || "",
+      email: email || "",
+      phoneNumber: phoneNumber || "",
       password: "",
       confirmPassword: "",
-      birthdate: null,
-      sex: "",
-      errors: {}
+      birthdate: birthdate || null,
+      sex: sex || "",
+      errors: {},
+      userModified: false,
     };
   }
 
@@ -76,18 +90,18 @@ class Login extends Component {
     if (isValid)
       newErrors[type] = false;
 
-    this.setState({ [type]: value, errors: newErrors });
+    this.setState({ [type]: value, errors: newErrors, userModified: false });
   }
 
   handleBirthdateChange = date => {
     if (isBefore(date, subYears(new Date(), 16)))
-      this.setState({ birthdate: date });
+      this.setState({ birthdate: date, userModified: false });
   }
 
   handleSexChange = event => {
     let newErrors = Object.assign({}, this.state.errors);
     newErrors["sex"] = false;
-    this.setState({ sex: event.target.value, errors: newErrors });
+    this.setState({ sex: event.target.value, errors: newErrors, userModified: false });
   }
 
   validateSignup = () => {
@@ -106,7 +120,7 @@ class Login extends Component {
     let newErrors = Object.assign({}, this.state.errors);
     let isValid = true;
 
-    ["firstName", "lastName", "email", "phoneNumber", "password"].forEach(type => {
+    ["firstName", "lastName", "email", "phoneNumber"].forEach(type => {
       if (!validate(this.state[type], type)) {
         newErrors[type] = true;
         isValid = false;
@@ -114,11 +128,19 @@ class Login extends Component {
         newErrors[type] = false;
     });
 
-    if (password !== confirmPassword) {
-      newErrors["confirmPassword"] = true;
-      isValid = false;
-    } else {
-      newErrors["confirmPassword"] = false;
+    if (this.props.variant !== "modify") {
+      if (!validate(password, "password")) {
+        newErrors["password"] = true;
+        isValid = false;
+      } else
+        newErrors["password"] = false;
+
+      if (password !== confirmPassword) {
+        newErrors["confirmPassword"] = true;
+        isValid = false;
+      } else {
+        newErrors["confirmPassword"] = false;
+      }
     }
 
     if (sex === "") {
@@ -127,19 +149,30 @@ class Login extends Component {
     }
 
     if (isValid) {
-      const instance = signup({
+      const user = {
         lastName,
         firstName,
         phoneNumber,
         sex,
         email,
         password
-      });
+      };
+
+      let instance;
+      if (this.props.variant === "modify") {
+        let modUser = {id: this.props.user.id, ...user};
+        instance = modifyUser(modUser);
+      } else {
+        instance = signup(user);
+      }
 
       if (instance) {
         instance.then((response) => {
           if (typeof response === 'object' && response !== null) {
-            this.props.onLoggedIn(response);
+            this.props.onUserUpdate(response);
+            if (this.props.variant === "modify") {
+              this.setState({ userModified: true });
+            }
           }
           if (response === "email exists") {
             newErrors["email"] = true;
@@ -164,10 +197,11 @@ class Login extends Component {
       confirmPassword,
       birthdate,
       sex,
-      errors
+      errors,
+      userModified
     } = this.state;
-    const { classes, isLoggedIn } = this.props;
-    if (isLoggedIn) {
+    const { classes, isLoggedIn, variant } = this.props;
+    if (isLoggedIn && variant !== "modify") {
       return <Redirect to="/dashboard"/>;
     }
     return (
@@ -184,9 +218,20 @@ class Login extends Component {
               align="center"
               variant="headline"
             >
-              Signup
+              {variant === "modify" ? "Modify User" : "Signup"}
             </Typography>
           </Grid>
+          {variant === "modify" && userModified &&
+          <Grid item xs={12}>
+            <Typography
+              align="center"
+              variant="subheading"
+              className={classes.userModifAlert}
+            >
+              USER MODIFICATION SUCCEEDED
+            </Typography>
+          </Grid>
+          }
           <Grid item xs={6}>
             <TextField
               id="first-name"
@@ -232,6 +277,7 @@ class Login extends Component {
               required
             />
           </Grid>
+          {variant !== "modify" &&
           <Grid item xs={12} sm={6}>
             <Tooltip
               id="password-tooltip"
@@ -249,6 +295,8 @@ class Login extends Component {
               />
             </Tooltip>
           </Grid>
+          }
+          {variant !== "modify" &&
           <Grid item xs={12} sm={6}>
             <TextField
               id="confirm-password"
@@ -261,6 +309,7 @@ class Login extends Component {
               required
             />
           </Grid>
+          }
           <Grid item xs={6}>
             <Tooltip
               id="birthdate-tooltip"
@@ -303,14 +352,16 @@ class Login extends Component {
               onClick={this.validateSignup}
               className={classes.signupButton}
             >
-              Signup
+              {variant === "modify" ? "Modify User" : "Signup"}
             </Button>
           </Grid>
+          {variant !== "modify" &&
           <Grid item xs={10}>
             <Typography align="center" variant="button">
               already a member ? <Link to="/login">Login</Link>
             </Typography>
           </Grid>
+          }
         </Grid>
       </MuiPickersUtilsProvider>
     );
@@ -319,8 +370,10 @@ class Login extends Component {
 
 Login.propTypes = {
   classes: PropTypes.object.isRequired,
-  onLoggedIn: PropTypes.func,
-  isLoggedIn: PropTypes.bool
+  onUserUpdate: PropTypes.func,
+  isLoggedIn: PropTypes.bool,
+  variant: PropTypes.string,
+  user: PropTypes.object
 };
 
 export default withStyles(styles)(Login);

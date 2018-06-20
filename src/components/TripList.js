@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { withStyles } from "@material-ui/core/styles";
 import TripCard from "./TripCard";
+import { addFavorite } from "../api/trips";
 
 const styles = {
   root: {
@@ -32,7 +33,17 @@ class TripList extends Component {
     let newState = Object.assign({}, this.state);
     const prevFav = this.state.isFavoriteList[key];
     newState.isFavoriteList[key] = prevFav ? false : true;
-    this.setState(newState); 
+    
+    const instance = addFavorite(this.props.user.id, this.props.trips[key].id, this.props.type);
+    if (instance !== null) {
+      instance.then((response) => {
+        console.log(response);
+        this.setState(newState); 
+      }).catch(e => {
+        console.log(e); 
+        this.setState(newState); 
+      });
+    }
   }
 
   render() {

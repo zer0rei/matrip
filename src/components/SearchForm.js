@@ -104,7 +104,8 @@ class SearchForm extends Component {
     this.setState({[type]: value, errors: newErrors});
 
     const suggType = (type === "city") ? "cities" : this.state.navValue;
-    const instance = getSuggestions(suggType, value);
+    const srcValue = (type === "destination") ? this.state.source : "";
+    const instance = getSuggestions(suggType, value, srcValue);
     if (instance !== null) {
       instance.then((suggestions) => {
         this.setState({ suggestions });

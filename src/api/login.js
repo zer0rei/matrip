@@ -14,7 +14,6 @@ export default function login(email, password) {
 
   return instance.post(url, data)
     .then((response) => {
-    console.log(response);
       return normalize(response.data);
     });
 }

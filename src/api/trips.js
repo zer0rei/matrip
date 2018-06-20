@@ -1,12 +1,59 @@
 import axios from "axios";
-import { format } from "date-fns";
+import {
+  format,
+  compareAsc,
+  addMinutes,
+  differenceInMinutes,
+  max,
+  min
+} from "date-fns";
+import qs from "qs";
 import { BACKEND_API } from "../config";
 
 const instance = axios.create({
   baseURL: `${BACKEND_API}/TRANSPORTS_APP/controller/`
 });
 
-export default function getTrips(request, type) {
+export function getFavorites(id) {
+  return instance.get("consulterFavoris.php", {
+    params: { id_user: id }
+  }).then((response) => {
+    let favorites = {};
+    console.log(response);
+    favorites["trains"] = normalizeTrains({}, response.data.train);
+    return favorites;
+  });
+}
+
+export function addFavorite(userId, valueId, type) {
+  let data;
+  switch (type) {
+    case "trains":
+      data = {
+        id_user: userId,
+        id_train: valueId
+      };
+      break;
+    case "buses":
+      data = {
+        id_user: userId,
+        id_bus: valueId
+      };
+      break;
+    case "carpools":
+      data = {
+        id_user: userId,
+        id_covoit: valueId
+      };
+      break;
+    default:
+      return null;
+  }
+  
+  return instance.post("ajouterFavoris.php", qs.stringify(data));
+}
+
+export function getTrips(request, type) {
   switch (type) {
     case "flights":
       return getFlights(request);
@@ -32,7 +79,7 @@ export function getFlights(request) {
     }
   })
   .then((response) => {
-    return normalizeFlights(request, JSON.parse(response.data));
+    return normalizeFlights(request, response.data);
   });
 }
 
@@ -90,11 +137,11 @@ export function getBuses(request) {
 
   return axios.all([dep(), ret()])
   .then(axios.spread(function (depResponse, retResponse) {
-    if (depResponse.data.status === true) {
+    if (depResponse.data[0].status === true) {
       if (request.isOneWay) {
         return normalizeBuses(request, depResponse.data);
       } else {
-        if (retResponse.data.status === true) {
+        if (retResponse.data[0].status === true) {
           return normalizeBuses(request, depResponse.data, retResponse.data);
         }
       }
@@ -184,11 +231,14 @@ function normalizeTrains(request, response, response2=undefined) {
       id: trip.id,
       source: trip.gareDepart,
       destination: trip.gareDestination,
-      departDate: new Date(format(request.departDate,
+      departDate: (request === {}) ? {}
+        : new Date(format(request.departDate,
         "YYYY-MM-DDT") + trip.heureDepart),
-      arrivalDate: new Date(format(request.departDate,
+      arrivalDate: (request === {}) ? {}
+        : new Date(format(request.departDate,
         "YYYY-MM-DDT") + trip.heureArrivee),
-      price: request.numTravellers * (request.cabinClass === 0 ?
+      price: (request === {}) ? ""
+        : request.numTravellers * (request.cabinClass === 0 ?
         trip.prix_deuxieme : trip.prix_premier),
       direct: trip.correspondance.toUpperCase() === "DIRECT",
       carrier: "ONCF",
@@ -224,37 +274,70 @@ function normalizeTrains(request, response, response2=undefined) {
 }
 
 function normalizeBuses(request, response, response2=undefined) {
-  if (response === undefined || response === {} || response.frequence === undefined)
+  if (response === undefined || response === [])
     return null;
 
-  let trips1 = {
-    source: response.depart,
-    destination: response.destination,
-    departDate: new Date(format(request.departDate,
-      "YYYY-MM-DDT") + response.premier_depart),
-    duration: parseInt(response.frequence.split("-")[1]),
-    price: request.numTravellers * 3.5,
-    line: response.ligne,
-    carrier: "ALSA",
+  function busList(trip, type) {
+    let buses = [];
+    let refDate = type === "depart" ? request.departDate : request.returnDate;
+    let firstDate = new Date(format(refDate,
+        "YYYY-MM-DDT") + trip.premier_depart);
+    let lastDate = new Date(format(refDate,
+        "YYYY-MM-DDT") + trip.dernier_depart);
+
+    let frequencies = trip.frequence.split("-");
+    let freq = (frequencies[1] === "") ? parseInt(frequencies[0]) :
+      parseInt(frequencies[1]);
+
+    let diff = Math.floor((differenceInMinutes(refDate, firstDate) / freq) - 1);
+    let start = max([firstDate, addMinutes(firstDate, diff * freq)]);
+    let date = start;
+    while (compareAsc(date, min([lastDate, addMinutes(start, 240)]))) {
+      if (type === "depart") {
+        buses.push({
+          id: trip.id,
+          source: trip.depart,
+          destination: trip.destination,
+          departDate: date,
+          arrivalDate: addMinutes(date, (freq / 2)),
+          price: request.numTravellers * 3.5,
+          line: trip.ligne,
+          carrier: "ALSA",
+        });
+      } else {
+        buses.push({
+          returnDate: date,
+          returnArrivalDate: addMinutes(date, (freq / 2)),
+          returnPrice: request.numTravellers * 3.5,
+          returnLine: trip.ligne,
+          returnCarrier: "ALSA",
+        });
+      }
+      date = addMinutes(date, freq);
+    }
+    return buses;
   }
+
+  let trips1 = [];
+  response.forEach(trip => {
+    trips1.push(...busList(trip, "depart"));
+  });
 
   if (request.isOneWay || response2 === undefined) {
-    return [ trips1 ];
+    return trips1;
   }
 
-  let trips2 = {
-    departDate: new Date(format(request.returnDate,
-      "YYYY-MM-DDT") + response.dernier_depart),
-    returnDuration: parseInt(response2.frequence.split("-")[1]),
-    returnPrice: request.numTravellers * 3.5,
-    returnLine: response2.ligne,
-    returnCarrier: "ALSA",
-  }
+  let trips2 = [];
+  response2.forEach(trip => {
+    trips2.push(...busList(trip, "return"));
+  });
 
-  let trips = Object.assign(trips1, trips2); 
+  let trips = [];
+  trips1.forEach((trip, i) => {
+    trips.push(Object.assign(trip, trips2[i])); 
+  });
 
-  return [ trips ];
-  
+  return trips;
 }
 
 function normalizeCarpools(request, response, response2=undefined) {

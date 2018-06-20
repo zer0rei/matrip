@@ -1,13 +1,15 @@
 import React, { Component } from "react";
 import PropTypes from "prop-types";
-import { Link, Redirect } from "react-router-dom";
+import { withRouter, Link, Redirect } from "react-router-dom";
 import { withStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Typography from "@material-ui/core/Typography";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
-import { validateEmail, validatePassword } from "../helpers"
+import sha1 from "js-sha1";
+import { validateEmail, validatePassword } from "../helpers";
 import login from "../api/login";
+import deleteUser from "../api/deleteUser";
 
 const styles = {
   loginButton: {
@@ -62,17 +64,32 @@ class Login extends Component {
       newErrors["password"] = false;
 
     if (isValid) {
-      const instance = login(email, password);
+      let instance;
+      if (this.props.variant === "delete") {
+        if (email === this.props.user.email &&
+          sha1(password) === this.props.user.password) {
+
+            instance = deleteUser(this.props.user.id);
+        } else {
+          newErrors["email"] = true;
+          newErrors["password"] = true;
+          isValid = false;
+        }
+      } else {
+        instance = login(email, password);
+      }
 
       if (instance) {
         instance.then((response) => {
-          if (typeof response === 'object' && response !== null) {
-            this.props.onLoggedIn(response);
-          }
-          else {
+          if (response === "user deleted") {
+            this.props.onUserUpdate({});
+            this.props.history.push("/");
+          } else if (typeof response === 'object' && response !== null) {
+            this.props.onUserUpdate(response);
+          } else {
             newErrors["email"] = true;
             newErrors["password"] = true;
-            this.setState({ error: newErrors });
+            this.setState({ errors: newErrors });
           }
         })
         .catch(function (error) {
@@ -86,10 +103,11 @@ class Login extends Component {
 
   render() {
     const { email, password, errors } = this.state;
-    const { isLoggedIn, classes } = this.props;
-    if (isLoggedIn) {
+    const { isLoggedIn, classes, variant } = this.props;
+    if (isLoggedIn && variant !== "delete") {
       return <Redirect to="/dashboard"/>;
     }
+
     return (
       <Grid
         container
@@ -103,7 +121,7 @@ class Login extends Component {
             align="center"
             variant="headline"
           >
-            Login
+            {variant === "delete" ? "Delete User" : "Login"}
           </Typography>
         </Grid>
         <Grid item xs={12} md={8}>
@@ -137,14 +155,16 @@ class Login extends Component {
             onClick={this.handleLogin}
             className={classes.loginButton}
           >
-            Login
+            {variant === "delete" ? "Delete User" : "Login"}
           </Button>
         </Grid>
+        {variant !== "delete" &&
         <Grid item xs={10}>
           <Typography align="center" variant="button">
             not a member ? <Link to="/signup">Signup</Link>
           </Typography>
         </Grid>
+        }
       </Grid>
     );
   }
@@ -152,8 +172,9 @@ class Login extends Component {
 
 Login.propTypes = {
   classes: PropTypes.object.isRequired,
-  onLoggedIn: PropTypes.func,
+  variant: PropTypes.string,
+  onUserUpdate: PropTypes.func,
   isLoggedIn: PropTypes.bool
 };
 
-export default withStyles(styles)(Login);
+export default withStyles(styles)(withRouter(Login));

@@ -2,7 +2,7 @@ import axios from "axios";
 import qs from "qs";
 import { BACKEND_API } from "../config";
 
-export default function signup(user) {
+export function signup(user) {
   const instance = axios.create({
     baseURL: `${BACKEND_API}/TRANSPORTS_APP/controller/`,
   });
@@ -19,7 +19,43 @@ export default function signup(user) {
 
   return instance.post(url, data)
     .then((response) => {
-    console.log(response.data);
+      return normalize(response.data);
+    });
+}
+
+export function modifyUser(user) {
+  const instance = axios.create({
+    baseURL: `${BACKEND_API}/TRANSPORTS_APP/controller/`,
+  });
+
+  let url = "updateUser.php";
+  let data = qs.stringify({
+    id: user.id,
+    nom: user.lastName,
+    prenom: user.firstName,
+    telephone: user.phoneNumber,
+    sexe: user.sex,
+    email: user.email,
+  });
+
+  return instance.post(url, data)
+    .then((response) => {
+      return normalize(response.data);
+    });
+}
+
+export function modifyPassword(id, password) {
+  const instance = axios.create({
+    baseURL: `${BACKEND_API}/TRANSPORTS_APP/controller/`,
+  });
+
+  let url = "updateUser.php";
+  let data = qs.stringify({
+    id, password
+  });
+
+  return instance.post(url, data)
+    .then((response) => {
       return normalize(response.data);
     });
 }

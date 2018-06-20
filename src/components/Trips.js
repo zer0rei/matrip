@@ -16,7 +16,7 @@ import darkTheme from "../themes/dark";
 import Page404 from "./Page404";
 import TripList from "./TripList";
 import { toISO } from "../helpers";
-import getTrips from "../api/trips";
+import { getTrips } from "../api/trips";
 
 const drawerWidth = 380;
 
@@ -115,7 +115,7 @@ class Trips extends Component {
   }
 
   render() {
-    const { classes, isLoggedIn } = this.props;
+    const { classes, isLoggedIn, user } = this.props;
     const { request, response, loading } = this.state;
 
     let trips;
@@ -133,6 +133,7 @@ class Trips extends Component {
           trips={response}
           type={request.navValue}
           isLoggedIn={isLoggedIn}
+          user={user}
         />;
       }
     }
@@ -161,6 +162,7 @@ class Trips extends Component {
 Trips.propTypes = {
   classes: PropTypes.object.isRequired,
   isLoggedIn: PropTypes.bool.isRequired,
+  user: PropTypes.object,
 };
 
 export default compose(

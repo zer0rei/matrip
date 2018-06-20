@@ -79,7 +79,7 @@ class Dashboard extends Component {
   }
 
   handleSectionChange = selectedSection => () => {
-    this.setState({ selectedSection, mobileOpen: false });
+    this.setState({ selectedSection, mobileOpen: false, selectedTab: 0 });
   };
 
   handleTabChange = (event, selectedTab) => {
@@ -91,23 +91,24 @@ class Dashboard extends Component {
   }
 
   render() {
-    const { classes, match } = this.props;
+    const { classes, match, user, onUserUpdate, isLoggedIn } = this.props;
     const { selectedTab, selectedSection } = this.state;
 
     let tabs = [];
     if (selectedSection === 0) {
       tabs = [
-        <Tab label="Modify Profile"/>,
-        <Tab label="Delete Profile"/>
+        <Tab label="Modify Profile" key={0}/>,
+        <Tab label="Modify Password" key={1}/>,
+        <Tab label="Delete User" key={2}/>
       ];
     } else if (selectedSection === 1) {
       tabs = ["Flights", "Trains", "Buses", "Carpools"].map((tab, i) => {
-        return <Tab label={tab}/>
+        return <Tab label={tab} key={i}/>
       });
     } else if (selectedSection === 2) {
       tabs = [
-        <Tab label="My Carpools"/>,
-        <Tab label="Add Carpool"/>
+        <Tab label="My Carpools" key={0}/>,
+        <Tab label="Add Carpool" key={1}/>
       ];
     }
 
@@ -190,19 +191,26 @@ class Dashboard extends Component {
           </Hidden>
         </MuiThemeProvider>
         <main className={classes.content}>
-          {selectedSection !== 0 && <div className={classes.toolbar}/>}
+          <div className={classes.toolbar}/>
           <Switch>
             <Route path={`${match.path}/profile`}
               render={props => (<Profile {...props}
+                selectedTab={selectedTab}
+                user={user}
+                onUserUpdate={onUserUpdate}
+                isLoggedIn={isLoggedIn}
               />)}
             />
             <Route path={`${match.path}/favorites`}
               render={props => (<Favorites {...props}
                 selectedTab={selectedTab}
+                isLoggedIn={isLoggedIn}
+                user={user}
               />)}
             />
             <Route path={`${match.path}/mytrips`}
               render={props => (<MyTrips {...props}
+                selectedTab={selectedTab}
               />)}
             />
             <Redirect to={`${match.path}/mytrips`}/>
@@ -215,6 +223,9 @@ class Dashboard extends Component {
 
 Dashboard.propTypes = {
   classes: PropTypes.object.isRequired,
+  user: PropTypes.object.isRequired,
+  onUserUpdate: PropTypes.func.isRequired,
+  isLoggedIn: PropTypes.bool.isRequired
 };
 
 export default withStyles(styles)(Dashboard);
